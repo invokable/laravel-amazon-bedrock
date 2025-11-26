@@ -58,6 +58,7 @@
     "test": "vendor/bin/pest",
     "test:coverage": "pest --coverage --coverage-clover build/logs/clover.xml",
     "lint": "pint",
+    "test:lint": "pint --test",
     "post-autoload-dump": [
       "@clear",
       "@prepare"
