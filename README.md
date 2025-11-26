@@ -13,7 +13,7 @@ We created our own package because `prism-php/bedrock` often doesn't support bre
 
 ## Requirements
 
-- PHP >= 8.2
+- PHP >= 8.3
 - Laravel >= 12.x
 
 ## Installation
