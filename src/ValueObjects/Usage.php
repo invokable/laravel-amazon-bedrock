@@ -1,0 +1,13 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Revolution\Amazon\Bedrock\ValueObjects;
+
+readonly class Usage
+{
+    public function __construct(
+        public int $promptTokens,
+        public int $completionTokens,
+    ) {}
+}
