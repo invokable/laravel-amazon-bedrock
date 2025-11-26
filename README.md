@@ -45,7 +45,7 @@ Usage is almost the same, making it easy to return to Prism, but it doesn't have
 use Revolution\Amazon\Bedrock\Facades\Bedrock;
 
 $response = Bedrock::text()
-                   ->using('bedrock', config('bedrock.model'))
+                   ->using(Bedrock::KEY, config('bedrock.model'))
                    ->withSystemPrompt('You are a helpful assistant.')
                    ->withPrompt('Tell me a joke about programming.')
                    ->asText();
@@ -70,7 +70,7 @@ it('can generate text', function () {
 
     // Run your code
     $response = Bedrock::text()
-        ->using('bedrock', 'global.anthropic.claude-sonnet-4-5-20250929-v1:0')
+        ->using(Bedrock::KEY, 'global.anthropic.claude-sonnet-4-5-20250929-v1:0')
         ->withPrompt('Who are you?')
         ->asText();
 

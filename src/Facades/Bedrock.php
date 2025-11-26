@@ -15,6 +15,8 @@ use Revolution\Amazon\Bedrock\Text\Response;
  */
 class Bedrock extends Facade
 {
+    public const string KEY = 'bedrock';
+
     /**
      * @param  array<int, Response>  $responses
      */
