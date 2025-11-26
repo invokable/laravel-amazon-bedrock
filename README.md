@@ -1,5 +1,8 @@
 # Tiny Amazon Bedrock wrapper for Laravel
 
+[![Maintainability](https://qlty.sh/gh/invokable/projects/laravel-amazon-bedrock/maintainability.svg)](https://qlty.sh/gh/invokable/projects/laravel-amazon-bedrock)
+[![Code Coverage](https://qlty.sh/gh/invokable/projects/laravel-amazon-bedrock/coverage.svg)](https://qlty.sh/gh/invokable/projects/laravel-amazon-bedrock)
+
 ## Overview
 
 A lightweight Laravel package to easily interact with Amazon Bedrock, specifically for generating text.
