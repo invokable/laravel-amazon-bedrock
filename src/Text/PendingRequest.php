@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Revolution\Amazon\Bedrock\Text;
 
+use Exception;
 use Illuminate\Http\Client\Response as HttpResponse;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
@@ -75,6 +76,9 @@ class PendingRequest
         return $this;
     }
 
+    /**
+     * @throws Exception
+     */
     public function asText(): Response
     {
         if ($this->fake !== null) {
