@@ -1,3 +1,19 @@
+# Project Guidelines
+
+## Overview
+
+## Technology Stack
+
+- **Language**: PHP 8.3+
+- **Framework**: Laravel 12.x+
+- **Testing**: Pest PHP 4.x
+- **Code Quality**: Laravel Pint (PSR-12)
+
+## Development Guidelines
+
+- Keep Prism compatibility in mind when making changes.
+
+
 <laravel-boost-guidelines>
 === foundation rules ===
 
