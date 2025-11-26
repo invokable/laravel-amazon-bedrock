@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Revolution\Amazon\Bedrock\Text;
 
 use Illuminate\Http\Client\Response as HttpResponse;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 use Revolution\Amazon\Bedrock\Testing\BedrockFake;
 use Revolution\Amazon\Bedrock\ValueObjects\Meta;
@@ -78,10 +79,10 @@ class PendingRequest
     {
         if ($this->fake !== null) {
             $this->fake->record([
-                'model' => $this->model ?? config('bedrock.model'),
+                'model' => $this->model ?? Config::string('bedrock.model'),
                 'systemPrompts' => $this->systemPrompts,
                 'prompt' => $this->prompt,
-                'maxTokens' => $this->maxTokens ?? config('bedrock.max_tokens'),
+                'maxTokens' => $this->maxTokens ?? Config::integer('bedrock.max_tokens'),
                 'temperature' => $this->temperature,
             ]);
 
@@ -95,10 +96,10 @@ class PendingRequest
 
     protected function sendRequest(): HttpResponse
     {
-        $model = $this->model ?? config('bedrock.model');
-        $region = config('bedrock.region');
-        $apiKey = config('bedrock.api_key');
-        $timeout = config('bedrock.timeout', 30);
+        $model = $this->model ?? Config::string('bedrock.model');
+        $region = Config::string('bedrock.region');
+        $apiKey = Config::string('bedrock.api_key');
+        $timeout = Config::integer('bedrock.timeout', 30);
 
         $url = "https://bedrock-runtime.{$region}.amazonaws.com/model/{$model}/invoke";
 
@@ -117,8 +118,8 @@ class PendingRequest
     protected function buildRequestBody(): array
     {
         $body = [
-            'anthropic_version' => config('bedrock.anthropic_version'),
-            'max_tokens' => $this->maxTokens ?? config('bedrock.max_tokens'),
+            'anthropic_version' => Config::string('bedrock.anthropic_version'),
+            'max_tokens' => $this->maxTokens ?? Config::integer('bedrock.max_tokens'),
             'messages' => [
                 [
                     'role' => 'user',
@@ -167,7 +168,7 @@ class PendingRequest
 
         $meta = new Meta(
             id: data_get($data, 'id', ''),
-            model: data_get($data, 'model', $this->model ?? config('bedrock.model')),
+            model: data_get($data, 'model', $this->model ?? Config::string('bedrock.model')),
         );
 
         return new Response(
