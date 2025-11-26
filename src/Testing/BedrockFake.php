@@ -34,6 +34,9 @@ class BedrockFake
         $this->recorded[] = $request;
     }
 
+    /**
+     * @throws Exception
+     */
     public function nextResponse(): Response
     {
         if ($this->responses === []) {
