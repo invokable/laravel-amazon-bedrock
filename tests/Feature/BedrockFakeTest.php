@@ -65,7 +65,7 @@ describe('Bedrock Fake', function () {
         ]);
 
         Bedrock::text()
-            ->using('bedrock', 'anthropic.claude-3-haiku-20240307-v1:0')
+            ->using(Bedrock::KEY, 'anthropic.claude-3-haiku-20240307-v1:0')
             ->withSystemPrompt('System 1')
             ->withSystemPrompt('System 2')
             ->withPrompt('User prompt')

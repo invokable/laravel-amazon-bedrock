@@ -62,7 +62,7 @@ describe('Bedrock HTTP', function () {
         ]);
 
         Bedrock::text()
-            ->using('bedrock', 'anthropic.claude-3-haiku-20240307-v1:0')
+            ->using(Bedrock::KEY, 'anthropic.claude-3-haiku-20240307-v1:0')
             ->withPrompt('Test')
             ->asText();
 
