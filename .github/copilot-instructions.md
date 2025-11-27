@@ -12,6 +12,7 @@
 ## Development Guidelines
 
 - Keep Prism compatibility in mind when making changes.
+- Prompt caching is not available for user messages specified with `withPrompt()`.
 
 
 <laravel-boost-guidelines>
