@@ -11,7 +11,7 @@ use Revolution\Amazon\Bedrock\Facades\Bedrock;
 Artisan::command('bedrock:test {prompt}', function (string $prompt) {
     $response = Bedrock::text()
         ->using('bedrock', config('bedrock.model'))
-        ->withSystemPrompt('You are a helpful assistant.')
+        ->withSystemPrompt('You are running on Amazon Bedrock and Anthropic Claude model: '.config('bedrock.model'))
         ->withSystemPrompt('Always respond in Japanese.')
         ->withPrompt($prompt)
         ->asText();
