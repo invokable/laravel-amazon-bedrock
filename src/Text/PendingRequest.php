@@ -130,9 +130,6 @@ class PendingRequest
                     'content' => [
                         'type' => 'text',
                         'text' => $this->prompt,
-                        'cache_control' => [
-                            'type' => 'ephemeral',
-                        ],
                     ],
                 ],
             ],
