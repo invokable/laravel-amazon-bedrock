@@ -46,7 +46,7 @@ describe('Bedrock HTTP', function () {
                 && $request['system'][0]['type'] === 'text'
                 && $request['system'][0]['text'] === 'You are a helpful assistant.'
                 && $request['messages'][0]['role'] === 'user'
-                && $request['messages'][0]['content']['text'] === 'Hello!';
+                && $request['messages'][0]['content'] === 'Hello!';
         });
     });
 
