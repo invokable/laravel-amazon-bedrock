@@ -127,10 +127,7 @@ class PendingRequest
             'messages' => [
                 [
                     'role' => 'user',
-                    'content' => [
-                        'type' => 'text',
-                        'text' => $this->prompt,
-                    ],
+                    'content' => $this->prompt,
                 ],
             ],
         ];
