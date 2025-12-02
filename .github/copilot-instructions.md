@@ -17,6 +17,10 @@ A lightweight Laravel package to easily interact with Amazon Bedrock, specifical
 - **Testing**: Pest PHP 4.x
 - **Code Quality**: Laravel Pint (PSR-12)
 
+## Command
+- `composer run test` - Run pest tests.
+- `composer run lint` - Run pint code formatter.
+
 ## Development Guidelines
 
 - Keep Prism compatibility in mind when making changes.
