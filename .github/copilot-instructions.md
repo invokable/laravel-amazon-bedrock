@@ -7,7 +7,7 @@ A lightweight Laravel package to easily interact with Amazon Bedrock, specifical
 - **Features**: Text Generation only.
 - **Supported Model**: Anthropic Claude Haiku/Sonnet/Opus 4 and later.(Default: Sonnet 4.5)
 - **Authentication**: Bedrock API Key only.
-- **Cache Control**: Always enabled ephemeral cache at system prompts.
+- **Cache Control**: Always enabled ephemeral cache.
 - **Minimal Dependencies**: No extra dependencies except Laravel framework.
 
 ## Technology Stack
@@ -24,7 +24,6 @@ A lightweight Laravel package to easily interact with Amazon Bedrock, specifical
 ## Development Guidelines
 
 - Keep Prism compatibility in mind when making changes.
-- Prompt caching is not available for user messages specified with `withPrompt()`.
 
 
 <laravel-boost-guidelines>
