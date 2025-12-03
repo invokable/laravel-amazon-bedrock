@@ -11,7 +11,8 @@ abstract class AbstractMessage implements Arrayable, Stringable
 {
     public function __construct(
         public readonly string $content,
-    ) {}
+    ) {
+    }
 
     public static function make(string|self $content): self
     {

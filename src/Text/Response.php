@@ -14,5 +14,6 @@ readonly class Response
         public string $finishReason,
         public Usage $usage,
         public Meta $meta,
-    ) {}
+    ) {
+    }
 }

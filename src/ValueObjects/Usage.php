@@ -9,5 +9,6 @@ readonly class Usage
     public function __construct(
         public int $promptTokens,
         public int $completionTokens,
-    ) {}
+    ) {
+    }
 }

@@ -9,5 +9,6 @@ readonly class Meta
     public function __construct(
         public string $id,
         public string $model,
-    ) {}
+    ) {
+    }
 }

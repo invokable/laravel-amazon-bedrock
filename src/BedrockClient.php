@@ -11,7 +11,8 @@ class BedrockClient
 {
     public function __construct(
         protected ?BedrockFake $fake = null,
-    ) {}
+    ) {
+    }
 
     public function text(): PendingRequest
     {

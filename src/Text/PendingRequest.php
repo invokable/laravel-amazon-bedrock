@@ -38,7 +38,8 @@ class PendingRequest
 
     public function __construct(
         protected ?BedrockFake $fake = null,
-    ) {}
+    ) {
+    }
 
     /**
      * @param  string  $provider  Ignored, for Prism compatibility
