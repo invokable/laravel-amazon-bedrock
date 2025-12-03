@@ -225,8 +225,8 @@ describe('Bedrock HTTP', function () {
 
         Bedrock::text()
             ->withMessages([
-                UserMessage::make('Previous question'),
-                AssistantMessage::make('Previous answer'),
+                UserMessage::make('Previous question')->withProviderOptions([]),
+                AssistantMessage::make('Previous answer')->withProviderOptions(),
             ])
             ->withPrompt('New question')
             ->asText();
