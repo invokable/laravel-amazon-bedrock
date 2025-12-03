@@ -34,7 +34,7 @@ class PendingRequest
      */
     protected array $messages = [];
 
-    protected ?string $prompt = null;
+    protected ?UserMessage $prompt = null;
 
     public function __construct(
         protected ?BedrockFake $fake = null,
@@ -77,9 +77,9 @@ class PendingRequest
         return $this;
     }
 
-    public function withPrompt(string $prompt): self
+    public function withPrompt(UserMessage|string $prompt): self
     {
-        $this->prompt = $prompt;
+        $this->prompt = UserMessage::make($prompt);
 
         return $this;
     }
@@ -179,7 +179,7 @@ class PendingRequest
         }
 
         if (filled($this->prompt)) {
-            $messages[] = UserMessage::make($this->prompt)->toArray();
+            $messages[] = $this->prompt->toArray();
         }
 
         return $messages;

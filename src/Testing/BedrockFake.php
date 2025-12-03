@@ -7,6 +7,7 @@ namespace Revolution\Amazon\Bedrock\Testing;
 use Exception;
 use PHPUnit\Framework\Assert as PHPUnit;
 use Revolution\Amazon\Bedrock\Text\Response;
+use Revolution\Amazon\Bedrock\ValueObjects\Messages\UserMessage;
 use Revolution\Amazon\Bedrock\ValueObjects\Meta;
 use Revolution\Amazon\Bedrock\ValueObjects\Usage;
 
@@ -73,7 +74,7 @@ class BedrockFake
             ->pluck('prompt');
 
         PHPUnit::assertTrue(
-            $prompts->contains($prompt),
+            $prompts->contains(UserMessage::make($prompt)),
             "Could not find the prompt '{$prompt}' in the recorded requests"
         );
     }

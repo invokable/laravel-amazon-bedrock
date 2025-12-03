@@ -77,7 +77,7 @@ describe('Bedrock Fake', function () {
             expect($requests)->toHaveCount(1);
             expect($requests[0]['model'])->toBe('anthropic.claude-3-haiku-20240307-v1:0');
             expect($requests[0]['systemPrompts'])->toBe(['System 1', 'System 2']);
-            expect($requests[0]['prompt'])->toBe('User prompt');
+            expect((string) $requests[0]['prompt'])->toBe('User prompt');
             expect($requests[0]['maxTokens'])->toBe(1024);
             expect($requests[0]['temperature'])->toBe(0.7);
         });
