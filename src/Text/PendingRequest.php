@@ -209,6 +209,8 @@ class PendingRequest
         $usage = new Usage(
             promptTokens: data_get($data, 'usage.input_tokens', 0),
             completionTokens: data_get($data, 'usage.output_tokens', 0),
+            cacheWriteInputTokens: data_get($data, 'usage.cache_creation_input_tokens', 0),
+            cacheReadInputTokens: data_get($data, 'usage.cache_read_input_tokens', 0),
         );
 
         $meta = new Meta(
