@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\Http;
 use Revolution\Amazon\Bedrock\Facades\Bedrock;
+use Revolution\Amazon\Bedrock\ValueObjects\Messages\AssistantMessage;
+use Revolution\Amazon\Bedrock\ValueObjects\Messages\SystemMessage;
+use Revolution\Amazon\Bedrock\ValueObjects\Messages\UserMessage;
 
 describe('Bedrock HTTP', function () {
     it('sends correct request to bedrock api', function () {
@@ -46,7 +49,7 @@ describe('Bedrock HTTP', function () {
                 && $request['system'][0]['type'] === 'text'
                 && $request['system'][0]['text'] === 'You are a helpful assistant.'
                 && $request['messages'][0]['role'] === 'user'
-                && $request['messages'][0]['content'] === 'Hello!';
+                && $request['messages'][0]['content'][0]['text'] === 'Hello!';
         });
     });
 
@@ -177,6 +180,137 @@ describe('Bedrock HTTP', function () {
 
         Http::assertSent(function ($request) {
             return ! isset($request['temperature']);
+        });
+    });
+
+    it('sends messages with withMessages', function () {
+        Http::fake([
+            'bedrock-runtime.us-east-1.amazonaws.com/*' => Http::response([
+                'id' => 'msg_123',
+                'model' => 'test',
+                'content' => [['type' => 'text', 'text' => 'Here is an example...']],
+                'stop_reason' => 'end_turn',
+                'usage' => ['input_tokens' => 50, 'output_tokens' => 30],
+            ]),
+        ]);
+
+        Bedrock::text()
+            ->withMessages([
+                new UserMessage('What is JSON?'),
+                new AssistantMessage('JSON is a lightweight data format...'),
+                new UserMessage('Can you show me an example?'),
+            ])
+            ->asText();
+
+        Http::assertSent(function ($request) {
+            return $request['messages'][0]['role'] === 'user'
+                && $request['messages'][0]['content'][0]['text'] === 'What is JSON?'
+                && $request['messages'][1]['role'] === 'assistant'
+                && $request['messages'][1]['content'][0]['text'] === 'JSON is a lightweight data format...'
+                && $request['messages'][2]['role'] === 'user'
+                && $request['messages'][2]['content'][0]['text'] === 'Can you show me an example?';
+        });
+    });
+
+    it('appends prompt after messages', function () {
+        Http::fake([
+            'bedrock-runtime.us-east-1.amazonaws.com/*' => Http::response([
+                'id' => 'msg_123',
+                'model' => 'test',
+                'content' => [['type' => 'text', 'text' => 'Response']],
+                'stop_reason' => 'end_turn',
+                'usage' => ['input_tokens' => 20, 'output_tokens' => 10],
+            ]),
+        ]);
+
+        Bedrock::text()
+            ->withMessages([
+                UserMessage::make('Previous question'),
+                AssistantMessage::make('Previous answer'),
+            ])
+            ->withPrompt('New question')
+            ->asText();
+
+        Http::assertSent(function ($request) {
+            return count($request['messages']) === 3
+                && $request['messages'][0]['role'] === 'user'
+                && $request['messages'][1]['role'] === 'assistant'
+                && $request['messages'][2]['role'] === 'user'
+                && $request['messages'][2]['content'][0]['text'] === 'New question';
+        });
+    });
+
+    it('converts SystemMessage to UserMessage in messages', function () {
+        Http::fake([
+            'bedrock-runtime.us-east-1.amazonaws.com/*' => Http::response([
+                'id' => 'msg_123',
+                'model' => 'test',
+                'content' => [['type' => 'text', 'text' => 'Response']],
+                'stop_reason' => 'end_turn',
+                'usage' => ['input_tokens' => 10, 'output_tokens' => 10],
+            ]),
+        ]);
+
+        Bedrock::text()
+            ->withMessages([
+                new SystemMessage('System instruction in messages'),
+            ])
+            ->withPrompt('Hello')
+            ->asText();
+
+        Http::assertSent(function ($request) {
+            return $request['messages'][0]['role'] === 'user'
+                && $request['messages'][0]['content'][0]['text'] === 'System instruction in messages';
+        });
+    });
+
+    it('accepts SystemMessage in withSystemPrompt', function () {
+        Http::fake([
+            'bedrock-runtime.us-east-1.amazonaws.com/*' => Http::response([
+                'id' => 'msg_123',
+                'model' => 'test',
+                'content' => [['type' => 'text', 'text' => 'Response']],
+                'stop_reason' => 'end_turn',
+                'usage' => ['input_tokens' => 10, 'output_tokens' => 10],
+            ]),
+        ]);
+
+        Bedrock::text()
+            ->withSystemPrompt(new SystemMessage('You are a helpful assistant.'))
+            ->withPrompt('Hello')
+            ->asText();
+
+        Http::assertSent(function ($request) {
+            return $request['system'][0]['type'] === 'text'
+                && $request['system'][0]['text'] === 'You are a helpful assistant.'
+                && isset($request['system'][0]['cache_control']);
+        });
+    });
+
+    it('accepts mixed string and SystemMessage in withSystemPrompts', function () {
+        Http::fake([
+            'bedrock-runtime.us-east-1.amazonaws.com/*' => Http::response([
+                'id' => 'msg_123',
+                'model' => 'test',
+                'content' => [['type' => 'text', 'text' => 'Response']],
+                'stop_reason' => 'end_turn',
+                'usage' => ['input_tokens' => 10, 'output_tokens' => 10],
+            ]),
+        ]);
+
+        Bedrock::text()
+            ->withSystemPrompts([
+                'First system prompt',
+                new SystemMessage('Second system prompt'),
+            ])
+            ->withPrompt('Hello')
+            ->asText();
+
+        Http::assertSent(function ($request) {
+            return $request['system'][0]['text'] === 'First system prompt'
+                && $request['system'][1]['text'] === 'Second system prompt'
+                && isset($request['system'][0]['cache_control'])
+                && isset($request['system'][1]['cache_control']);
         });
     });
 });

@@ -5,10 +5,14 @@ declare(strict_types=1);
 namespace Revolution\Amazon\Bedrock\Text;
 
 use Exception;
+use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Http\Client\Response as HttpResponse;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 use Revolution\Amazon\Bedrock\Testing\BedrockFake;
+use Revolution\Amazon\Bedrock\ValueObjects\Messages\AbstractMessage;
+use Revolution\Amazon\Bedrock\ValueObjects\Messages\SystemMessage;
+use Revolution\Amazon\Bedrock\ValueObjects\Messages\UserMessage;
 use Revolution\Amazon\Bedrock\ValueObjects\Meta;
 use Revolution\Amazon\Bedrock\ValueObjects\Usage;
 
@@ -21,15 +25,21 @@ class PendingRequest
     protected int|float|null $temperature = null;
 
     /**
-     * @var array<int, string>
+     * @var array<int, string|SystemMessage>
      */
     protected array $systemPrompts = [];
+
+    /**
+     * @var array<int, AbstractMessage>
+     */
+    protected array $messages = [];
 
     protected ?string $prompt = null;
 
     public function __construct(
         protected ?BedrockFake $fake = null,
-    ) {}
+    ) {
+    }
 
     /**
      * @param  string  $provider  Ignored, for Prism compatibility
@@ -41,16 +51,29 @@ class PendingRequest
         return $this;
     }
 
-    public function withSystemPrompt(string $message): self
+    public function withSystemPrompt(string|SystemMessage $message): self
     {
         $this->systemPrompts[] = $message;
 
         return $this;
     }
 
+    /**
+     * @param  array<int, string|SystemMessage>  $messages
+     */
     public function withSystemPrompts(array $messages): self
     {
         $this->systemPrompts = $messages;
+
+        return $this;
+    }
+
+    /**
+     * @param  array<int, AbstractMessage>  $messages
+     */
+    public function withMessages(array $messages): self
+    {
+        $this->messages = $messages;
 
         return $this;
     }
@@ -81,10 +104,11 @@ class PendingRequest
      */
     public function asText(): Response
     {
-        if ($this->fake !== null) {
+        if (filled($this->fake)) {
             $this->fake->record([
                 'model' => $this->model ?? Config::string('bedrock.model'),
                 'systemPrompts' => $this->systemPrompts,
+                'messages' => $this->messages,
                 'prompt' => $this->prompt,
                 'maxTokens' => $this->maxTokens ?? Config::integer('bedrock.max_tokens'),
                 'temperature' => $this->temperature,
@@ -124,32 +148,55 @@ class PendingRequest
         $body = [
             'anthropic_version' => Config::string('bedrock.anthropic_version'),
             'max_tokens' => $this->maxTokens ?? Config::integer('bedrock.max_tokens'),
-            'messages' => [
-                [
-                    'role' => 'user',
-                    'content' => $this->prompt,
-                ],
-            ],
+            'messages' => $this->buildMessages(),
         ];
 
-        if ($this->systemPrompts !== []) {
-            $body['system'] = array_map(
-                fn (string $content): array => [
-                    'type' => 'text',
-                    'text' => $content,
-                    'cache_control' => [
-                        'type' => 'ephemeral',
-                    ],
-                ],
-                $this->systemPrompts,
-            );
+        if (filled($this->systemPrompts)) {
+            $body['system'] = $this->buildSystemPrompts();
         }
 
-        if ($this->temperature !== null) {
+        if (filled($this->temperature)) {
             $body['temperature'] = $this->temperature;
         }
 
         return $body;
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    protected function buildMessages(): array
+    {
+        $messages = [];
+
+        foreach ($this->messages as $message) {
+            if ($message instanceof SystemMessage) {
+                $messages[] = UserMessage::make($message->content)->toArray();
+            } elseif ($message instanceof Arrayable) {
+                $messages[] = $message->toArray();
+            } elseif (is_array($message)) {
+                $messages[] = $message;
+            }
+        }
+
+        if (filled($this->prompt)) {
+            $messages[] = UserMessage::make($this->prompt)->toArray();
+        }
+
+        return $messages;
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    protected function buildSystemPrompts(): array
+    {
+        return array_map(
+            fn (string|SystemMessage $content): array => $content instanceof SystemMessage
+                ? $content->toArray()
+                : SystemMessage::make($content)->toArray(),
+            $this->systemPrompts,
+        );
     }
 
     protected function parseResponse(HttpResponse $response): Response

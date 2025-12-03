@@ -10,7 +10,7 @@ A lightweight Laravel package to easily interact with Amazon Bedrock, specifical
 - **Features**: Text Generation only.
 - **Supported Model**: Anthropic Claude Haiku/Sonnet/Opus 4 and later.(Default: Sonnet 4.5)
 - **Authentication**: Bedrock API Key only.
-- **Cache Control**: Always enabled ephemeral cache at system prompts.
+- **Cache Control**: Always enabled ephemeral cache.
 - **Minimal Dependencies**: No extra dependencies except Laravel framework.
 
 We created our own package because `prism-php/bedrock` often doesn't support breaking changes in `prism-php/prism`. If you need more functionality than this package, please use [Prism](https://github.com/prism-php).
@@ -52,6 +52,52 @@ $response = Bedrock::text()
                    ->asText();
 
 echo $response->text;
+```
+
+### Conversation History
+
+For multi-turn conversations, use `withMessages()` to pass previous messages.
+
+```php
+use Revolution\Amazon\Bedrock\Facades\Bedrock;
+use Revolution\Amazon\Bedrock\ValueObjects\Messages\UserMessage;
+use Revolution\Amazon\Bedrock\ValueObjects\Messages\AssistantMessage;
+
+$response = Bedrock::text()
+                   ->withSystemPrompt('You are a helpful assistant.')
+                   ->withMessages([
+                       new UserMessage('What is JSON?'),
+                       new AssistantMessage('JSON is a lightweight data format...'),
+                   ])
+                   ->withPrompt('Can you show me an example?')
+                   ->asText();
+
+echo $response->text;
+```
+
+Example with Eloquent conversation history
+
+```php
+use App\Models\Message;
+use Revolution\Amazon\Bedrock\Facades\Bedrock;
+use Revolution\Amazon\Bedrock\ValueObjects\Messages\UserMessage;
+use Revolution\Amazon\Bedrock\ValueObjects\Messages\AssistantMessage;
+
+$messages = Message::query()
+    ->where('conversation_id', $conversationId)
+    ->orderBy('created_at')
+    ->get()
+    ->map(fn (Message $message) => match ($message->role) {
+        'user' => UserMessage::make($message->content),
+        'assistant' => AssistantMessage::make($message->content),
+    })
+    ->all();
+
+$response = Bedrock::text()
+                   ->withSystemPrompt('You are a helpful assistant.')
+                   ->withMessages($messages)
+                   ->withPrompt($newUserMessage)
+                   ->asText();
 ```
 
 ## Testing
