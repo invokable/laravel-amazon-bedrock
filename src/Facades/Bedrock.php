@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Revolution\Amazon\Bedrock\Facades;
 
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Facade;
 use Revolution\Amazon\Bedrock\BedrockClient;
 use Revolution\Amazon\Bedrock\Testing\BedrockFake;
+use Revolution\Amazon\Bedrock\Testing\PendingRequestFake;
 use Revolution\Amazon\Bedrock\Text\PendingRequest;
 use Revolution\Amazon\Bedrock\Text\Response;
 
@@ -24,7 +26,7 @@ class Bedrock extends Facade
     {
         $fake = new BedrockFake($responses);
 
-        static::swap(new BedrockClient($fake));
+        App::instance(PendingRequest::class, new PendingRequestFake($fake));
 
         return $fake;
     }

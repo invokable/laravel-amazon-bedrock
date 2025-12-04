@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Revolution\Amazon\Bedrock;
 
 use Illuminate\Support\ServiceProvider;
+use Revolution\Amazon\Bedrock\Text\PendingRequest;
 
 class BedrockServiceProvider extends ServiceProvider
 {
@@ -13,6 +14,7 @@ class BedrockServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__.'/../config/bedrock.php', 'bedrock');
 
         $this->app->scoped(BedrockClient::class);
+        $this->app->scoped(PendingRequest::class);
     }
 
     public function boot(): void

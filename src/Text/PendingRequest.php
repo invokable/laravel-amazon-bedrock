@@ -10,7 +10,6 @@ use Illuminate\Http\Client\Response as HttpResponse;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
-use Revolution\Amazon\Bedrock\Testing\BedrockFake;
 use Revolution\Amazon\Bedrock\ValueObjects\Messages\AbstractMessage;
 use Revolution\Amazon\Bedrock\ValueObjects\Messages\SystemMessage;
 use Revolution\Amazon\Bedrock\ValueObjects\Messages\UserMessage;
@@ -36,11 +35,6 @@ class PendingRequest
     protected array $messages = [];
 
     protected ?UserMessage $prompt = null;
-
-    public function __construct(
-        protected ?BedrockFake $fake = null,
-    ) {
-    }
 
     /**
      * @param  string  $provider  Ignored, for Prism compatibility
@@ -105,19 +99,6 @@ class PendingRequest
      */
     public function asText(): Response
     {
-        if (filled($this->fake)) {
-            $this->fake->record([
-                'model' => $this->model ?? Config::string('bedrock.model'),
-                'systemPrompts' => $this->systemPrompts,
-                'messages' => $this->messages,
-                'prompt' => $this->prompt,
-                'maxTokens' => $this->maxTokens ?? Config::integer('bedrock.max_tokens'),
-                'temperature' => $this->temperature,
-            ]);
-
-            return $this->fake->nextResponse();
-        }
-
         $response = $this->sendRequest();
 
         return $this->parseResponse($response);
