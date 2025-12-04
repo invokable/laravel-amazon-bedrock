@@ -25,6 +25,9 @@ A lightweight Laravel package to easily interact with Amazon Bedrock, specifical
 
 - Keep Prism compatibility in mind when making changes.
 
+## Testing
+
+- Don't write test-only code inside production code. Use service containers to swap it in.
 
 <laravel-boost-guidelines>
 === foundation rules ===
