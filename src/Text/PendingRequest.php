@@ -7,6 +7,7 @@ namespace Revolution\Amazon\Bedrock\Text;
 use Exception;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Http\Client\Response as HttpResponse;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 use Revolution\Amazon\Bedrock\Testing\BedrockFake;
@@ -191,12 +192,9 @@ class PendingRequest
      */
     protected function buildSystemPrompts(): array
     {
-        return array_map(
-            fn (string|SystemMessage $content): array => $content instanceof SystemMessage
-                ? $content->toArray()
-                : SystemMessage::make($content)->toArray(),
-            $this->systemPrompts,
-        );
+        return Collection::make($this->systemPrompts)
+            ->map(fn (string|SystemMessage $content): array => SystemMessage::make($content)->toArray())
+            ->toArray();
     }
 
     protected function parseResponse(HttpResponse $response): Response
