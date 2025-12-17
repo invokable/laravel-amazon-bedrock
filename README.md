@@ -10,7 +10,7 @@ A lightweight Laravel package to easily interact with Amazon Bedrock, specifical
 - **Features**: Text Generation only.
 - **Supported Model**: Anthropic Claude Haiku/Sonnet/Opus 4 and later.(Default: Sonnet 4.5)
 - **Authentication**: Bedrock API Key only.
-- **Cache Control**: Always enabled ephemeral cache.
+- **Cache Control**: Always enabled ephemeral cache at system prompt.
 - **Minimal Dependencies**: No extra dependencies except Laravel framework.
 
 We created our own package because `prism-php/bedrock` often doesn't support breaking changes in `prism-php/prism`. If you need more functionality than this package, please use [Prism](https://github.com/prism-php).

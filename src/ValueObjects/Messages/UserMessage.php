@@ -17,9 +17,6 @@ class UserMessage extends AbstractMessage
                 [
                     'type' => 'text',
                     'text' => $this->content,
-                    'cache_control' => [
-                        'type' => 'ephemeral',
-                    ],
                 ],
             ],
         ];
