@@ -16,7 +16,8 @@
     "laravel/pint": "^1.22",
     "pestphp/pest": "^4.1",
     "pestphp/pest-plugin-laravel": "^4.0",
-    "revolution/laravel-boost-copilot-cli": "^1.0"
+    "revolution/laravel-boost-copilot-cli": "^2.0",
+    "laravel/ai": "^0.1.2"
   },
   "autoload": {
     "psr-4": {
@@ -37,8 +38,7 @@
       "email": "kawaxbiz@gmail.com"
     },
     {
-      "name": "puklipo",
-      "email": "pcs.engineer.team@gmail.com"
+      "name": "puklipo"
     }
   ],
   "extra": {
@@ -59,9 +59,11 @@
     "test:coverage": "pest --coverage --coverage-clover build/logs/clover.xml",
     "lint": "pint",
     "test:lint": "pint --test",
+    "boost": "vendor/bin/testbench boost:install --no-interaction --ansi",
     "post-autoload-dump": [
       "@clear",
-      "@prepare"
+      "@prepare",
+      "@build"
     ],
     "clear": "@php vendor/bin/testbench package:purge-skeleton --ansi",
     "prepare": "@php vendor/bin/testbench package:discover --ansi",
