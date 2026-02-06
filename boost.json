@@ -1,11 +1,17 @@
 {
     "agents": [
-        "copilot"
-    ],
-    "editors": [
         "copilot-cli"
     ],
-    "guidelines": [
-        "revolution/laravel-boost-copilot-cli"
+    "guidelines": true,
+    "herd_mcp": false,
+    "mcp": true,
+    "packages": [
+        "revolution/laravel-boost-copilot-cli",
+        "laravel/ai"
+    ],
+    "sail": false,
+    "skills": [
+        "pest-testing",
+        "developing-with-ai-sdk"
     ]
 }
