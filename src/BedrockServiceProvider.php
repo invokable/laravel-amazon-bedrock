@@ -30,12 +30,14 @@ class BedrockServiceProvider extends ServiceProvider
             ], 'bedrock-config');
         }
 
-        Ai::extend('bedrock-anthropic', function (Application $app, array $config) {
-            return new BedrockProvider(
-                new BedrockGateway($this->app['events']),
-                $config,
-                $this->app->make(Dispatcher::class),
-            );
-        });
+        if (class_exists(Ai::class)) {
+            Ai::extend('bedrock-anthropic', function (Application $app, array $config) {
+                return new BedrockProvider(
+                    new BedrockGateway($this->app['events']),
+                    $config,
+                    $this->app->make(Dispatcher::class),
+                );
+            });
+        }
     }
 }
