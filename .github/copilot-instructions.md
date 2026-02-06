@@ -12,7 +12,7 @@ A lightweight Laravel package to easily interact with Amazon Bedrock, specifical
 
 ## Technology Stack
 
-- **Language**: PHP 8.3+
+- **Language**: PHP 8.4+
 - **Framework**: Laravel 12.x+
 - **Testing**: Pest PHP 4.x
 - **Code Quality**: Laravel Pint (PSR-12)
