@@ -3,6 +3,7 @@
 namespace Revolution\Amazon\Bedrock\Ai;
 
 use Closure;
+use Exception;
 use Generator;
 use Illuminate\Contracts\Events\Dispatcher;
 use Laravel\Ai\Contracts\Files\TranscribableAudio;
@@ -46,6 +47,7 @@ class BedrockGateway implements Gateway
      * Generate text representing the next message in a conversation.
      *
      * @param  array<string, \Illuminate\JsonSchema\Types\Type>|null  $schema
+     * @throws Exception
      */
     public function generateText(TextProvider $provider, string $model, ?string $instructions, array $messages = [], array $tools = [], ?array $schema = null, ?TextGenerationOptions $options = null, ?int $timeout = null): TextResponse
     {
@@ -103,7 +105,7 @@ class BedrockGateway implements Gateway
      */
     public function streamText(string $invocationId, TextProvider $provider, string $model, ?string $instructions, array $messages = [], array $tools = [], ?array $schema = null, ?TextGenerationOptions $options = null, ?int $timeout = null): Generator
     {
-        // TODO: Implement streamText() method.
+        throw new Exception('Not supported.');
     }
 
     /**
@@ -122,7 +124,7 @@ class BedrockGateway implements Gateway
      */
     public function generateAudio(AudioProvider $provider, string $model, string $text, string $voice, ?string $instructions = null): AudioResponse
     {
-        // TODO: Implement generateAudio() method.
+        throw new Exception('Not supported.');
     }
 
     /**
@@ -132,7 +134,7 @@ class BedrockGateway implements Gateway
      */
     public function generateEmbeddings(EmbeddingProvider $provider, string $model, array $inputs, int $dimensions): EmbeddingsResponse
     {
-        // TODO: Implement generateEmbeddings() method.
+        throw new Exception('Not supported.');
     }
 
     /**
@@ -144,7 +146,7 @@ class BedrockGateway implements Gateway
      */
     public function generateImage(ImageProvider $provider, string $model, string $prompt, array $attachments = [], ?string $size = null, ?string $quality = null, ?int $timeout = null): ImageResponse
     {
-        // TODO: Implement generateImage() method.
+        throw new Exception('Not supported.');
     }
 
     /**
@@ -152,6 +154,6 @@ class BedrockGateway implements Gateway
      */
     public function generateTranscription(TranscriptionProvider $provider, string $model, TranscribableAudio $audio, ?string $language = null, bool $diarize = false): TranscriptionResponse
     {
-        // TODO: Implement generateTranscription() method.
+        throw new Exception('Not supported.');
     }
 }
