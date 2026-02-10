@@ -6,6 +6,8 @@ use Revolution\Amazon\Bedrock\Facades\Bedrock;
 use Revolution\Amazon\Bedrock\ValueObjects\Messages\AssistantMessage;
 use Revolution\Amazon\Bedrock\ValueObjects\Messages\UserMessage;
 
+use function Laravel\Ai\agent;
+
 // Artisan::command('inspire', function () {
 //     $this->comment(Inspiring::quote());
 // })->purpose('Display an inspiring quote');
@@ -14,16 +16,17 @@ use Revolution\Amazon\Bedrock\ValueObjects\Messages\UserMessage;
 Artisan::command('bedrock:test {prompt?}', function (?string $prompt = null) {
     $response = Bedrock::text()
         ->using('bedrock', config('bedrock.model'))
-        ->withSystemPrompt('You are running on Amazon Bedrock and Anthropic Claude model: '.config('bedrock.model'))
-        // ->withSystemPrompt('Always respond in Japanese.')
-//        ->withPrompt($prompt)
-        ->withMessages([
-            new UserMessage('What is JSON?'),
-            new AssistantMessage('JSON is a lightweight data format...'),
-        ])
-        ->withPrompt('Can you show me an example?')
-//        ->withPrompt('What is JSON?')
+        ->withPrompt('Tell me about Amazon Bedrock')
         ->asText();
+
+    $this->info($response->text);
+});
+
+// vendor/bin/testbench bedrock:ai-sdk
+Artisan::command('bedrock:ai-sdk', function () {
+    $response = agent(
+        instructions: 'You are an expert at software development.',
+    )->prompt('Tell me about Laravel');
 
     $this->info($response->text);
 });
