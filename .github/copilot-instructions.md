@@ -35,3 +35,36 @@ A lightweight Laravel package to easily interact with Amazon Bedrock, specifical
 
 - Experimental implementation.
 - Support only text generation. No other features are supported, including text streams.
+
+This is an opt-in feature only enabled when the Laravel AI SDK is installed.
+
+```shell
+composer require laravel/ai
+php artisan vendor:publish --provider="Laravel\Ai\AiServiceProvider"
+```
+
+Add the following configuration to `config/ai.php`.
+
+```php
+// config/ai.php
+    'default' => 'bedrock-anthropic',
+
+    'providers' => [
+        'bedrock-anthropic' => [
+            'driver' => 'bedrock-anthropic',
+            'key' => env('AWS_BEDROCK_API_KEY'),
+        ],
+    ],
+```
+
+Usage with agent helper.
+
+```php
+use function Laravel\Ai\agent;
+
+$response = agent(
+    instructions: 'You are an expert at software development.',
+)->prompt('Tell me about Laravel');
+
+echo $response->text;
+```
