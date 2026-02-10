@@ -93,7 +93,7 @@ class BedrockGateway implements Gateway
                 if ($message->role === MessageRole::Assistant) {
                     return AssistantMessage::make($message->content)->toArray();
                 }
-            })->filter()->values();
+            })->filter()->values()->toArray();
     }
 
     /**
