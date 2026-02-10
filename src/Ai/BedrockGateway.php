@@ -24,6 +24,7 @@ use Laravel\Ai\Responses\EmbeddingsResponse;
 use Laravel\Ai\Responses\ImageResponse;
 use Laravel\Ai\Responses\TextResponse;
 use Laravel\Ai\Responses\TranscriptionResponse;
+use LogicException;
 use Revolution\Amazon\Bedrock\Facades\Bedrock;
 use Revolution\Amazon\Bedrock\ValueObjects\Messages\AssistantMessage;
 use Revolution\Amazon\Bedrock\ValueObjects\Messages\UserMessage;
@@ -106,7 +107,7 @@ class BedrockGateway implements Gateway
      */
     public function streamText(string $invocationId, TextProvider $provider, string $model, ?string $instructions, array $messages = [], array $tools = [], ?array $schema = null, ?TextGenerationOptions $options = null, ?int $timeout = null): Generator
     {
-        throw new Exception('Not supported.');
+        throw new LogicException('Not supported.');
     }
 
     /**
@@ -125,7 +126,7 @@ class BedrockGateway implements Gateway
      */
     public function generateAudio(AudioProvider $provider, string $model, string $text, string $voice, ?string $instructions = null): AudioResponse
     {
-        throw new Exception('Not supported.');
+        throw new LogicException('Not supported.');
     }
 
     /**
@@ -135,7 +136,7 @@ class BedrockGateway implements Gateway
      */
     public function generateEmbeddings(EmbeddingProvider $provider, string $model, array $inputs, int $dimensions): EmbeddingsResponse
     {
-        throw new Exception('Not supported.');
+        throw new LogicException('Not supported.');
     }
 
     /**
@@ -147,7 +148,7 @@ class BedrockGateway implements Gateway
      */
     public function generateImage(ImageProvider $provider, string $model, string $prompt, array $attachments = [], ?string $size = null, ?string $quality = null, ?int $timeout = null): ImageResponse
     {
-        throw new Exception('Not supported.');
+        throw new LogicException('Not supported.');
     }
 
     /**
@@ -155,6 +156,6 @@ class BedrockGateway implements Gateway
      */
     public function generateTranscription(TranscriptionProvider $provider, string $model, TranscribableAudio $audio, ?string $language = null, bool $diarize = false): TranscriptionResponse
     {
-        throw new Exception('Not supported.');
+        throw new LogicException('Not supported.');
     }
 }
