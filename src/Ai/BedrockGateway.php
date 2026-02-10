@@ -47,6 +47,7 @@ class BedrockGateway implements Gateway
      * Generate text representing the next message in a conversation.
      *
      * @param  array<string, \Illuminate\JsonSchema\Types\Type>|null  $schema
+     *
      * @throws Exception
      */
     public function generateText(TextProvider $provider, string $model, ?string $instructions, array $messages = [], array $tools = [], ?array $schema = null, ?TextGenerationOptions $options = null, ?int $timeout = null): TextResponse
