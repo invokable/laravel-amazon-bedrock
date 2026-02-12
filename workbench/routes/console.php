@@ -30,3 +30,15 @@ Artisan::command('bedrock:ai-sdk', function () {
 
     $this->info($response->text);
 });
+
+// vendor/bin/testbench bedrock:stream
+Artisan::command('bedrock:stream', function () {
+    $response = Bedrock::text()
+        ->using('bedrock', config('bedrock.model'))
+        ->withPrompt('Tell me about Amazon Bedrock')
+        ->asStream();
+
+    foreach ($response as $event) {
+        dump($event);
+    }
+});

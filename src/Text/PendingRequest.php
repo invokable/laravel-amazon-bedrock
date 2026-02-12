@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Revolution\Amazon\Bedrock\Text;
 
 use Exception;
+use Generator;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Http\Client\Response as HttpResponse;
 use Illuminate\Support\Collection;
@@ -116,6 +117,38 @@ class PendingRequest
         $body = $this->buildRequestBody();
 
         return Http::timeout($timeout)
+            ->withToken($apiKey)
+            ->acceptJson()
+            ->post($url, $body)
+            ->throw();
+    }
+
+    public function asStream(): Generator
+    {
+        $response = $this->sendRequestStream();
+        $body = $response->getBody();
+        while (! $body->eof()) {
+            $chunk = $body->read(1024);
+            if(!empty($chunk)) {
+                yield $chunk;
+            }
+        }
+    }
+
+    protected function sendRequestStream(): HttpResponse
+    {
+        $model = $this->model ?? Config::string('bedrock.model');
+        $region = Config::string('bedrock.region');
+        $apiKey = Config::string('bedrock.api_key');
+        $timeout = Config::integer('bedrock.timeout', 30);
+
+        $url = "https://bedrock-runtime.{$region}.amazonaws.com/model/{$model}/invoke-with-response-stream";
+
+        $body = $this->buildRequestBody();
+
+        return Http::withOptions([
+            'stream' => true,
+        ])->timeout($timeout)
             ->withToken($apiKey)
             ->acceptJson()
             ->post($url, $body)
