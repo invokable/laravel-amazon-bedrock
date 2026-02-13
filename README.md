@@ -100,6 +100,24 @@ $response = Bedrock::text()
                    ->asText();
 ```
 
+### Streaming
+
+```php
+use Revolution\Amazon\Bedrock\Facades\Bedrock;
+
+$stream = Bedrock::text()
+                 ->using(Bedrock::KEY, config('bedrock.model'))
+                 ->withSystemPrompt('You are a helpful assistant.')
+                 ->withPrompt('Tell me a joke about programming.')
+                 ->asStream();
+
+foreach ($stream as $event) {
+    if (data_get($event, 'type') === 'content_block_delta') {
+        echo data_get($event, 'delta.text');
+    }
+}
+```
+
 ## Testing
 
 ```php

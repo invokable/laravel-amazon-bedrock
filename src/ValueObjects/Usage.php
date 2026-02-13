@@ -11,6 +11,5 @@ readonly class Usage
         public int $completionTokens,
         public ?int $cacheWriteInputTokens = null,
         public ?int $cacheReadInputTokens = null,
-    ) {
-    }
+    ) {}
 }

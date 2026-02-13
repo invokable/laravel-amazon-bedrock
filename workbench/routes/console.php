@@ -1,10 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
+use Laravel\Ai\Streaming\Events\TextDelta;
 use Revolution\Amazon\Bedrock\Facades\Bedrock;
-use Revolution\Amazon\Bedrock\ValueObjects\Messages\AssistantMessage;
-use Revolution\Amazon\Bedrock\ValueObjects\Messages\UserMessage;
 
 use function Laravel\Ai\agent;
 
@@ -34,11 +35,26 @@ Artisan::command('bedrock:ai-sdk', function () {
 // vendor/bin/testbench bedrock:stream
 Artisan::command('bedrock:stream', function () {
     $response = Bedrock::text()
-        ->using('bedrock', config('bedrock.model'))
+        ->using('bedrock', 'global.anthropic.claude-haiku-4-5-20251001-v1:0')
         ->withPrompt('Tell me about Amazon Bedrock')
         ->asStream();
 
     foreach ($response as $event) {
-        dump($event);
+        if ($event['type'] === 'content_block_delta') {
+            echo data_get($event, 'delta.text');
+        }
+    }
+});
+
+// vendor/bin/testbench bedrock:ai-sdk-stream
+Artisan::command('bedrock:ai-sdk-stream', function () {
+    $stream = agent(
+        instructions: 'You are an expert at software development.',
+    )->stream('Tell me about Laravel');
+
+    foreach ($stream as $event) {
+        if ($event instanceof TextDelta) {
+            echo $event->delta;
+        }
     }
 });

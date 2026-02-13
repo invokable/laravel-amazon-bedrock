@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Revolution\Amazon\Bedrock\Text;
 
+use Aws\Api\Parser\NonSeekableStreamDecodingEventStreamIterator;
 use Exception;
 use Generator;
 use Illuminate\Contracts\Support\Arrayable;
@@ -126,12 +127,12 @@ class PendingRequest
     public function asStream(): Generator
     {
         $response = $this->sendRequestStream();
-        $body = $response->getBody();
-        while (! $body->eof()) {
-            $chunk = $body->read(1024);
-            if(!empty($chunk)) {
-                yield $chunk;
-            }
+        $stream = $response->getBody();
+        $events = new NonSeekableStreamDecodingEventStreamIterator($stream);
+
+        foreach ($events as $event) {
+            $payload = json_decode($event['payload']->getContents(), true);
+            yield json_decode(base64_decode($payload['bytes']), true);
         }
     }
 
