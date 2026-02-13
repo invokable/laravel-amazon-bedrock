@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Revolution\Amazon\Bedrock\Testing;
 
 use Exception;
@@ -11,8 +13,7 @@ class PendingRequestFake extends PendingRequest
 {
     public function __construct(
         protected BedrockFake $fake,
-    ) {
-    }
+    ) {}
 
     /**
      * @throws Exception

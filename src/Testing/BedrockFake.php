@@ -25,8 +25,7 @@ class BedrockFake
      */
     public function __construct(
         protected array $responses = [],
-    ) {
-    }
+    ) {}
 
     /**
      * @param  array<string, mixed>  $request

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Revolution\Amazon\Bedrock\Ai;
 
 use Laravel\Ai\Contracts\Providers\FileProvider;

@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Revolution\Amazon\Bedrock\Text;
 
+use Aws\Api\Parser\NonSeekableStreamDecodingEventStreamIterator;
 use Exception;
+use Generator;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Http\Client\Response as HttpResponse;
 use Illuminate\Support\Collection;
@@ -116,6 +118,38 @@ class PendingRequest
         $body = $this->buildRequestBody();
 
         return Http::timeout($timeout)
+            ->withToken($apiKey)
+            ->acceptJson()
+            ->post($url, $body)
+            ->throw();
+    }
+
+    public function asStream(): Generator
+    {
+        $response = $this->sendRequestStream();
+        $stream = $response->getBody();
+        $events = new NonSeekableStreamDecodingEventStreamIterator($stream);
+
+        foreach ($events as $event) {
+            $payload = json_decode($event['payload']->getContents(), true);
+            yield json_decode(base64_decode($payload['bytes']), true);
+        }
+    }
+
+    protected function sendRequestStream(): HttpResponse
+    {
+        $model = $this->model ?? Config::string('bedrock.model');
+        $region = Config::string('bedrock.region');
+        $apiKey = Config::string('bedrock.api_key');
+        $timeout = Config::integer('bedrock.timeout', 30);
+
+        $url = "https://bedrock-runtime.{$region}.amazonaws.com/model/{$model}/invoke-with-response-stream";
+
+        $body = $this->buildRequestBody();
+
+        return Http::withOptions([
+            'stream' => true,
+        ])->timeout($timeout)
             ->withToken($apiKey)
             ->acceptJson()
             ->post($url, $body)

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Laravel\Ai\AnonymousAgent;
 use Laravel\Ai\Prompts\AgentPrompt;
 

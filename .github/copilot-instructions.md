@@ -34,7 +34,7 @@ A lightweight Laravel package to easily interact with Amazon Bedrock, specifical
 ## Laravel AI SDK Integration
 
 - Experimental implementation.
-- Support only text generation. No other features are supported, including text streams.
+- Support only text generation. No other features are supported.
 
 This is an opt-in feature only enabled when the Laravel AI SDK is installed.
 
@@ -67,4 +67,22 @@ $response = agent(
 )->prompt('Tell me about Laravel');
 
 echo $response->text;
+```
+
+Streaming
+
+```php
+use Laravel\Ai\Streaming\Events\TextDelta;
+
+use function Laravel\Ai\agent;
+
+$stream = agent(
+    instructions: 'You are an expert at software development.',
+)->stream('Tell me about Laravel');
+
+foreach ($stream as $event) {
+    if ($event instanceof TextDelta) {
+        echo $event->delta;
+    }
+}
 ```
