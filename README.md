@@ -144,6 +144,20 @@ it('can generate text', function () {
 });
 ```
 
+### Streaming Testing
+
+```php
+   Bedrock::fake(streamResponses: [
+       StreamResponseFake::make('Hello!'),
+   ]);
+   foreach (Bedrock::text()->withPrompt('Hi')->asStream() as $event) {
+       //
+   }
+
+   // multiple chunks
+   StreamResponseFake::make()->withChunks(['Hello', ' World']);
+```
+
 ## License
 
 MIT
