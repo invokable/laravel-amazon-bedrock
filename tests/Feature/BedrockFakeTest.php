@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Revolution\Amazon\Bedrock\Facades\Bedrock;
+use Revolution\Amazon\Bedrock\Testing\StreamResponseFake;
 use Revolution\Amazon\Bedrock\Testing\TextResponseFake;
 use Revolution\Amazon\Bedrock\ValueObjects\Meta;
 use Revolution\Amazon\Bedrock\ValueObjects\Usage;
@@ -110,5 +111,107 @@ describe('Bedrock Fake', function () {
 
         expect($response->text)->toBe('');
         expect($response->finishReason)->toBe('end_turn');
+    });
+
+    it('can fake stream responses', function () {
+        Bedrock::fake(streamResponses: [
+            StreamResponseFake::make('Hello! How can I help you?'),
+        ]);
+
+        $events = iterator_to_array(
+            Bedrock::text()
+                ->withSystemPrompt('You are a helpful assistant.')
+                ->withPrompt('Hello!')
+                ->asStream()
+        );
+
+        $types = array_column($events, 'type');
+        expect($types)->toBe([
+            'message_start',
+            'content_block_start',
+            'content_block_delta',
+            'content_block_stop',
+            'message_delta',
+            'message_stop',
+        ]);
+
+        $delta = collect($events)->firstWhere('type', 'content_block_delta');
+        expect($delta['delta']['text'])->toBe('Hello! How can I help you?');
+    });
+
+    it('can fake stream with multiple chunks', function () {
+        Bedrock::fake(streamResponses: [
+            StreamResponseFake::make()->withChunks(['Hello', ' World', '!']),
+        ]);
+
+        $events = iterator_to_array(
+            Bedrock::text()
+                ->withPrompt('Test')
+                ->asStream()
+        );
+
+        $deltas = collect($events)
+            ->where('type', 'content_block_delta')
+            ->pluck('delta.text')
+            ->all();
+
+        expect($deltas)->toBe(['Hello', ' World', '!']);
+    });
+
+    it('can assert prompt from stream request', function () {
+        $fake = Bedrock::fake(streamResponses: [
+            StreamResponseFake::make('Response'),
+        ]);
+
+        iterator_to_array(
+            Bedrock::text()
+                ->withPrompt('Stream prompt')
+                ->asStream()
+        );
+
+        $fake->assertPrompt('Stream prompt');
+    });
+
+    it('can assert system prompt from stream request', function () {
+        $fake = Bedrock::fake(streamResponses: [
+            StreamResponseFake::make('Response'),
+        ]);
+
+        iterator_to_array(
+            Bedrock::text()
+                ->withSystemPrompt('You are a helpful assistant.')
+                ->withPrompt('Hello!')
+                ->asStream()
+        );
+
+        $fake->assertSystemPrompt('You are a helpful assistant.');
+    });
+
+    it('can assert call count with mixed text and stream', function () {
+        $fake = Bedrock::fake(
+            responses: [TextResponseFake::make()->withText('Text response')],
+            streamResponses: [StreamResponseFake::make('Stream response')],
+        );
+
+        Bedrock::text()->withPrompt('First')->asText();
+        iterator_to_array(Bedrock::text()->withPrompt('Second')->asStream());
+
+        $fake->assertCallCount(2);
+    });
+
+    it('returns default stream response when no stream responses provided', function () {
+        Bedrock::fake();
+
+        $events = iterator_to_array(
+            Bedrock::text()
+                ->withPrompt('Test')
+                ->asStream()
+        );
+
+        $types = array_column($events, 'type');
+        expect($types)->toContain('message_start', 'content_block_delta', 'message_stop');
+
+        $delta = collect($events)->firstWhere('type', 'content_block_delta');
+        expect($delta['delta']['text'])->toBe('');
     });
 });

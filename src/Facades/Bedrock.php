@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Facade;
 use Revolution\Amazon\Bedrock\BedrockClient;
 use Revolution\Amazon\Bedrock\Testing\BedrockFake;
 use Revolution\Amazon\Bedrock\Testing\PendingRequestFake;
+use Revolution\Amazon\Bedrock\Testing\StreamResponseFake;
 use Revolution\Amazon\Bedrock\Text\PendingRequest;
 use Revolution\Amazon\Bedrock\Text\Response;
 
@@ -21,10 +22,11 @@ class Bedrock extends Facade
 
     /**
      * @param  array<int, Response>  $responses
+     * @param  array<int, StreamResponseFake>  $streamResponses
      */
-    public static function fake(array $responses = []): BedrockFake
+    public static function fake(array $responses = [], array $streamResponses = []): BedrockFake
     {
-        $fake = new BedrockFake($responses);
+        $fake = new BedrockFake($responses, $streamResponses);
 
         App::instance(PendingRequest::class, new PendingRequestFake($fake));
 

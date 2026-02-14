@@ -15,6 +15,8 @@ class BedrockFake
 {
     protected int $responseSequence = 0;
 
+    protected int $streamResponseSequence = 0;
+
     /**
      * @var array<int, array<string, mixed>>
      */
@@ -22,9 +24,11 @@ class BedrockFake
 
     /**
      * @param  array<int, Response>  $responses
+     * @param  array<int, StreamResponseFake>  $streamResponses
      */
     public function __construct(
         protected array $responses = [],
+        protected array $streamResponses = [],
     ) {}
 
     /**
@@ -89,6 +93,28 @@ class BedrockFake
             $systemPrompts->contains($systemPrompt),
             "Could not find the system prompt '{$systemPrompt}' in the recorded requests"
         );
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     *
+     * @throws Exception
+     */
+    public function nextStreamResponse(): array
+    {
+        if ($this->streamResponses === []) {
+            return StreamResponseFake::make()->toEvents();
+        }
+
+        $sequence = $this->streamResponseSequence;
+
+        if (! isset($this->streamResponses[$sequence])) {
+            throw new Exception('Could not find a stream response for the request');
+        }
+
+        $this->streamResponseSequence++;
+
+        return $this->streamResponses[$sequence]->toEvents();
     }
 
     public function assertCallCount(int $expectedCount): void

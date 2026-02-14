@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Revolution\Amazon\Bedrock\Testing;
 
 use Exception;
+use Generator;
 use Illuminate\Support\Facades\Config;
 use Revolution\Amazon\Bedrock\Text\PendingRequest;
 use Revolution\Amazon\Bedrock\Text\Response;
@@ -30,5 +31,22 @@ class PendingRequestFake extends PendingRequest
         ]);
 
         return $this->fake->nextResponse();
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function asStream(): Generator
+    {
+        $this->fake->record([
+            'model' => $this->model ?? Config::string('bedrock.model'),
+            'systemPrompts' => $this->systemPrompts,
+            'messages' => $this->messages,
+            'prompt' => $this->prompt,
+            'maxTokens' => $this->maxTokens ?? Config::integer('bedrock.max_tokens'),
+            'temperature' => $this->temperature,
+        ]);
+
+        yield from $this->fake->nextStreamResponse();
     }
 }
