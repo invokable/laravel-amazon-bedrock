@@ -52,7 +52,7 @@ Add the following configuration to `config/ai.php`.
     'providers' => [
         'bedrock-anthropic' => [
             'driver' => 'bedrock-anthropic',
-            'key' => env('AWS_BEDROCK_API_KEY'),
+            'key' => '',
         ],
     ],
 ```
