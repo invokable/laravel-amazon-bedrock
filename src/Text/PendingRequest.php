@@ -131,8 +131,8 @@ class PendingRequest
         $events = new NonSeekableStreamDecodingEventStreamIterator($stream);
 
         foreach ($events as $event) {
-            $payload = json_decode($event['payload']->getContents(), true);
-            yield json_decode(base64_decode($payload['bytes']), true);
+            $payload = json_decode(data_get($event, 'payload')->getContents(), true);
+            yield json_decode(base64_decode(data_get($payload, 'bytes')), true);
         }
     }
 
