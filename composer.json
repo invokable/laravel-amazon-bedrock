@@ -18,7 +18,7 @@
     "pestphp/pest": "^4.1",
     "pestphp/pest-plugin-laravel": "^4.0",
     "revolution/laravel-boost-copilot-cli": "^2.0",
-    "laravel/ai": "^0.1.2"
+    "laravel/ai": "^0.2"
   },
   "autoload": {
     "psr-4": {
