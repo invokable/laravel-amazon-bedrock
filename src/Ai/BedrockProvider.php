@@ -29,7 +29,7 @@ class BedrockProvider extends Provider implements FileProvider, TextProvider
      */
     public function defaultTextModel(): string
     {
-        return 'global.anthropic.claude-sonnet-4-5-20250929-v1:0';
+        return 'global.anthropic.claude-sonnet-4-6:0';
     }
 
     /**
@@ -45,6 +45,6 @@ class BedrockProvider extends Provider implements FileProvider, TextProvider
      */
     public function smartestTextModel(): string
     {
-        return 'global.anthropic.claude-opus-4-5-20251101-v1:0';
+        return 'global.anthropic.claude-opus-4-6-v1:0';
     }
 }

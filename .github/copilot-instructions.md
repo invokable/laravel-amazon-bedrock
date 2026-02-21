@@ -5,7 +5,7 @@
 A lightweight Laravel package to easily interact with Amazon Bedrock, specifically for generating text.
 
 - **Features**: Text Generation only.
-- **Supported Model**: Anthropic Claude Haiku/Sonnet/Opus 4 and later.(Default: Sonnet 4.5)
+- **Supported Model**: Anthropic Claude Haiku/Sonnet/Opus 4 and later.(Default: Sonnet 4.6)
 - **Authentication**: Bedrock API Key only.
 - **Cache Control**: Always enabled ephemeral cache at system prompt.
 - **Minimal Dependencies**: No extra dependencies except Laravel framework.
