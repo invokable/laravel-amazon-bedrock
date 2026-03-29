@@ -8,7 +8,6 @@ use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Ai\Ai;
-use Revolution\Amazon\Bedrock\Ai\BedrockGateway;
 use Revolution\Amazon\Bedrock\Ai\BedrockProvider;
 use Revolution\Amazon\Bedrock\Text\PendingRequest;
 
@@ -33,7 +32,6 @@ class BedrockServiceProvider extends ServiceProvider
         if (class_exists(Ai::class)) {
             Ai::extend('bedrock-anthropic', function (Application $app, array $config) {
                 return new BedrockProvider(
-                    new BedrockGateway($this->app['events']),
                     $config,
                     $this->app->make(Dispatcher::class),
                 );
