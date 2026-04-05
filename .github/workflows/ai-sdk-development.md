@@ -63,59 +63,78 @@ If there are no previous comments yet, start from the beginning of the implement
 
 ## Step 2: Read the Codebase
 
-Examine the current state of the `next` branch:
+Examine the current state of the `next` branch. Key files:
 - `src/Ai/BedrockProvider.php`
 - `src/Ai/BedrockGateway.php`
+- `src/Text/PendingRequest.php` — **the core HTTP client** that calls the Bedrock API directly using `Illuminate\Support\Facades\Http`. This is the actual implementation the Gateway should delegate to.
 - `src/BedrockServiceProvider.php`
 - `composer.json`
 - `README.md`
 - `resources/boost/guidelines/core.blade.php` (if it exists)
 
-## Step 3: Read the Laravel AI SDK Documentation
+## Step 3: Deeply Investigate the Laravel AI SDK
 
-Fetch the primary sources for the Laravel AI SDK:
-- `https://raw.githubusercontent.com/laravel/docs/13.x/ai-sdk.md` — official documentation
-- `https://raw.githubusercontent.com/laravel/ai/refs/heads/main/README.md` — package README
-- Browse `https://github.com/laravel/ai` to understand the provider/gateway contract — check `src/Contracts/` directory and existing provider implementations
+This is a new SDK — study it carefully before implementing anything.
 
-Key files to check in `laravel/ai`:
+Fetch these primary sources:
+- `https://raw.githubusercontent.com/laravel/docs/13.x/ai-sdk.md` — official user-facing documentation
+- `https://raw.githubusercontent.com/laravel/ai/refs/heads/main/README.md`
+
+Then explore the `laravel/ai` source on GitHub to understand the full processing pipeline. Critical files to read:
+
+**Contracts (define what we must implement):**
 - `https://raw.githubusercontent.com/laravel/ai/refs/heads/main/src/Contracts/Gateway/TextGateway.php`
 - `https://raw.githubusercontent.com/laravel/ai/refs/heads/main/src/Contracts/Providers/TextProvider.php`
+
+**Provider base class and traits (understand what's inherited for free):**
 - `https://raw.githubusercontent.com/laravel/ai/refs/heads/main/src/Providers/Provider.php`
+- `https://raw.githubusercontent.com/laravel/ai/refs/heads/main/src/Providers/Concerns/GeneratesText.php`
+- `https://raw.githubusercontent.com/laravel/ai/refs/heads/main/src/Providers/Concerns/StreamsText.php`
+
+**How config flows from `config/ai.php` into the provider:**
+- `https://raw.githubusercontent.com/laravel/ai/refs/heads/main/src/AiManager.php`
+
+**An existing gateway for reference (understand pattern):**
+- Browse `https://github.com/laravel/ai/tree/main/src/Gateway` to find a concrete gateway implementation
+- Read one example gateway completely to understand: how it reads config, how it calls HTTP, how it maps responses
+
+**TextGenerationOptions — understand what options the SDK passes through:**
+- `https://raw.githubusercontent.com/laravel/ai/refs/heads/main/src/Gateway/TextGenerationOptions.php`
+
+The goal is to understand exactly what `$provider->config` contains, what `TextGenerationOptions` provides, and what the gateway is expected to return. Do not assume — read the source.
 
 ## Step 4: Determine the Next Task
 
 Based on the discussion history and codebase state, choose **exactly one** task from this ordered list that hasn't been completed yet:
 
-1. **Bootstrap**: Set up `BedrockProvider` registration in `BedrockServiceProvider` so `bedrock-anthropic` driver is registered with the Laravel AI SDK when `laravel/ai` is installed. Update `composer.json` to add `laravel/ai` as a suggested dependency.
+1. **Bootstrap**: Register the `bedrock` driver in `BedrockServiceProvider` with the Laravel AI SDK when `laravel/ai` is installed. Add `laravel/ai` to `require` in `composer.json` (hard dependency, not suggest). The driver name must be `bedrock`.
 
-2. **Text Generation**: Implement `generateText()` in `BedrockGateway` using the existing `Bedrock` facade (not Prism). Remove any Prism imports/dependencies from `BedrockGateway`. Use `Revolution\Amazon\Bedrock\Facades\Bedrock` directly.
+2. **Redesign BedrockGateway**: Rewrite `BedrockGateway` so it no longer uses the `Bedrock` facade. Instead, it should directly use `src/Text/PendingRequest.php` — instantiate it directly (or via the container). Read config from `$provider->config` (e.g. `region`, `api_key`, `model`). Remove all Prism imports. Remove `config/bedrock.php` if it exists in `workbench/config/` or `config/`.
 
-3. **Streaming**: Implement `streamText()` in `BedrockGateway` using `Bedrock::text()->asStream()`. Map Bedrock stream events to Laravel AI SDK stream events (`StreamStart`, `TextStart`, `TextDelta`, `TextEnd`).
+3. **Text Generation**: Implement `generateText()` in the redesigned `BedrockGateway`. Wire up the full request/response cycle using `PendingRequest`. Map the response to `TextResponse` with `Usage` and `Meta`.
 
-4. **Structured Output**: Implement `generateText()` structured output support (JSON schema). Pass schema to Bedrock's tool_use or document the limitation if Bedrock doesn't support it the same way.
+4. **Streaming**: Implement `streamText()` in `BedrockGateway` using `PendingRequest::asStream()`. Map Bedrock stream events to Laravel AI SDK events (`StreamStart`, `TextStart`, `TextDelta`, `TextEnd`).
 
-5. **Configuration**: Update `config/bedrock.php` (if it exists in workbench) to include model configuration for `text.default`, `text.cheapest`, `text.smartest`. Check what models are available.
+5. **Model Defaults in Provider**: Implement `defaultTextModel()`, `cheapestTextModel()`, `smartestTextModel()` in `BedrockProvider` reading from `$this->config['models']`. Define sensible Anthropic Claude model IDs as fallbacks.
 
-6. **Remove Facade Dependency from Gateway**: Ensure `BedrockGateway` has no remaining dependency on `Prism\Prism` or `Laravel\Ai\Gateway\Prism\PrismException`. Use native Bedrock error handling instead.
+6. **Update README**: Rewrite `README.md` to document the `bedrock` driver setup in `config/ai.php`, required config keys (`region`, `api_key`), and usage examples via the `agent()` helper and streaming.
 
-7. **Update README**: Rewrite `README.md` to document the Laravel AI SDK integration as the primary usage, with setup instructions for `config/ai.php`, example code for `agent()` helper, text generation, and streaming. Remove or archive old Bedrock facade documentation.
+7. **Update Boost Guidelines**: Update `resources/boost/guidelines/core.blade.php` to reflect the new AI SDK-focused architecture if the file exists.
 
-8. **Update Boost Guidelines**: Update `resources/boost/guidelines/core.blade.php` to reflect the new AI SDK-focused architecture if the file exists.
-
-9. **Tests**: Write Pest tests for `BedrockGateway` covering `generateText()` and `streamText()` using fakes/mocks. Tests go in `tests/Ai/`.
+8. **Tests**: Write Pest tests for `BedrockGateway` covering `generateText()` and `streamText()`. Tests go in `tests/Ai/`. Use HTTP faking (`Http::fake()`) — do not write test-only code inside production classes.
 
 If all tasks are done, post a completion summary to discussion #3 and do not create a PR.
 
 ## Step 5: Implement the Task
 
-Make precise, surgical changes:
-- Only modify files relevant to the chosen task
-- Follow PSR-12 coding style (enforced by Laravel Pint)
-- Use `declare(strict_types=1)` in all PHP files
-- Add docblocks only where truly needed for clarity
-- Do NOT add `laravel/ai` as a hard dependency — it must remain optional (suggest only)
-- The `BedrockGateway` must use `Revolution\Amazon\Bedrock\Facades\Bedrock` for API calls
+Guiding principles:
+- `laravel/ai` is a **hard dependency** (`require`, not `suggest`)
+- The driver name is `bedrock` (not `bedrock-anthropic`)
+- `BedrockGateway` must **not** use the `Bedrock` facade — use `PendingRequest` directly
+- Config comes from `$provider->config` array (set via `config/ai.php` under the `bedrock` provider key)
+- Remove `config/bedrock.php` — it is no longer needed
+- PSR-12 style, `declare(strict_types=1)` in all PHP files
+- No docblocks unless genuinely clarifying
 
 After making changes, run:
 ```bash
@@ -126,7 +145,7 @@ to verify the package installs cleanly.
 ## Step 6: Create a Pull Request
 
 Use the `create-pull-request` safe output to open a draft PR targeting the `next` branch with:
-- A clear title describing the task (e.g., "Implement text generation in BedrockGateway")
+- A clear title describing the task
 - A body explaining what was changed and why
 
 ## Step 7: Record Progress
@@ -135,7 +154,7 @@ Add a comment to discussion #3 with:
 - What task was completed in this run
 - Summary of changes made
 - Link to the PR (if created)
-- What the next task should be (from the ordered list above)
+- What the next task should be
 
 Format the comment as:
 ```
