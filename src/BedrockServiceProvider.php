@@ -30,7 +30,7 @@ class BedrockServiceProvider extends ServiceProvider
         }
 
         if (class_exists(Ai::class)) {
-            Ai::extend('bedrock-anthropic', function (Application $app, array $config) {
+            Ai::extend('bedrock', function (Application $app, array $config) {
                 return new BedrockProvider(
                     $config,
                     $this->app->make(Dispatcher::class),
