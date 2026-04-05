@@ -10,6 +10,15 @@ A lightweight Laravel package to easily interact with Amazon Bedrock, specifical
 - **Cache Control**: Always enabled ephemeral cache at system prompt.
 - **Minimal Dependencies**: No extra dependencies except Laravel framework.
 
+## NEXT
+
+Prismにバグがあったので作ったパッケージだったけどその後Laravel AI SDKが登場したのでAI SDKに特化したパッケージにすれば独自に作ってる機能を削除できるのでリニューアルする。
+
+- いつでもPrismに戻れるように使い方の互換を残してたパッケージからLaravel AI SDK専用パッケージにする。
+- Anthropic以外のモデルも使ってテキスト生成以外のImages、TTS、STT、Embeddings、Reranking、Filesも可能なら対応する。
+
+GitHub Agentic Workflowsで少しずつ実行。
+
 ## Technology Stack
 
 - **Language**: PHP 8.4+
