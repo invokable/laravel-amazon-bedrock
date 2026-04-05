@@ -16,6 +16,9 @@ Prismにバグがあったので作ったパッケージだったけどその後
 
 - いつでもPrismに戻れるように使い方の互換を残してたパッケージからLaravel AI SDK専用パッケージにする。
 - Anthropic以外のモデルも使ってテキスト生成以外のImages、TTS、STT、Embeddings、Reranking、Filesも可能なら対応する。
+- Bedrock APIキー以外の認証方法にも対応する。Bedrockしか使えない制限があるのはエンプラなのでAPIキーのみだと使いにくいはず。
+- ai-sdk-development.mdには`src/Text/PendingRequest.php`を使うように書いてるけどBedrock APIの呼び方だけ参考にして既存のGatewayクラスに合わせた実装にする。
+- config/bedrock.php の代わりはAttributesやproviderOptions()で可能なはず。
 
 GitHub Agentic Workflowsで少しずつ実行。
 
