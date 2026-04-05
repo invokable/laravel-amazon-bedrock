@@ -3,8 +3,7 @@ name: Laravel AI SDK Development
 description: Incrementally implements Laravel AI SDK integration for Amazon Bedrock. Reads discussions/3 as memory, implements one feature at a time on the next branch, and records progress back to the discussion.
 
 on:
-  schedule:
-    - cron: '0 2 * * *'
+  schedule: daily
   workflow_dispatch:
 
 permissions:
@@ -16,6 +15,17 @@ permissions:
 checkout:
   ref: next
 
+steps:
+    - name: Set up PHP
+      uses: shivammathur/setup-php@2.37.0
+      with:
+          php-version: 8.5
+          extensions: mbstring
+          coverage: xdebug
+
+    - name: Install Composer dependencies
+      run: composer install --no-interaction --prefer-dist --optimize-autoloader
+
 tools:
   github:
     toolsets: [default, discussions]
@@ -25,9 +35,9 @@ tools:
 
 network:
   allowed:
-    - github.com
-    - raw.githubusercontent.com
-    - api.github.com
+    - github
+    - threat-detection
+    - php
 
 safe-outputs:
   add-comment:
