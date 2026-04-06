@@ -11,6 +11,7 @@ use Illuminate\JsonSchema\Types\Type;
 use Illuminate\Support\Str;
 use Laravel\Ai\Contracts\Gateway\TextGateway;
 use Laravel\Ai\Contracts\Providers\TextProvider;
+use Laravel\Ai\Gateway\Prism\PrismException;
 use Laravel\Ai\Gateway\TextGenerationOptions;
 use Laravel\Ai\Messages\Message;
 use Laravel\Ai\Messages\MessageRole;
@@ -22,7 +23,8 @@ use Laravel\Ai\Streaming\Events\StreamStart;
 use Laravel\Ai\Streaming\Events\TextDelta;
 use Laravel\Ai\Streaming\Events\TextEnd;
 use Laravel\Ai\Streaming\Events\TextStart;
-use Revolution\Amazon\Bedrock\Text\PendingRequest;
+use Prism\Prism\Exceptions\PrismException as PrismVendorException;
+use Revolution\Amazon\Bedrock\Facades\Bedrock;
 use Revolution\Amazon\Bedrock\ValueObjects\Messages\AssistantMessage;
 use Revolution\Amazon\Bedrock\ValueObjects\Messages\UserMessage;
 
@@ -44,7 +46,11 @@ class BedrockGateway implements TextGateway
      */
     public function generateText(TextProvider $provider, string $model, ?string $instructions, array $messages = [], array $tools = [], ?array $schema = null, ?TextGenerationOptions $options = null, ?int $timeout = null): TextResponse
     {
-        $request = $this->buildRequest($provider, $model, $timeout);
+        $request = Bedrock::text();
+
+        if ($model) {
+            $request->using(provider: Bedrock::KEY, model: $model);
+        }
 
         if ($instructions) {
             $request->withSystemPrompt($instructions);
@@ -52,14 +58,6 @@ class BedrockGateway implements TextGateway
 
         if ($messages) {
             $request->withMessages($this->toBedrockMessages($messages));
-        }
-
-        if ($options?->maxTokens) {
-            $request->withMaxTokens($options->maxTokens);
-        }
-
-        if ($options?->temperature !== null) {
-            $request->usingTemperature($options->temperature);
         }
 
         $response = $request->asText();
@@ -79,69 +77,6 @@ class BedrockGateway implements TextGateway
         );
     }
 
-    /**
-     * Stream text representing the next message in a conversation.
-     *
-     * @param  array<string, Type>|null  $schema
-     */
-    public function streamText(string $invocationId, TextProvider $provider, string $model, ?string $instructions, array $messages = [], array $tools = [], ?array $schema = null, ?TextGenerationOptions $options = null, ?int $timeout = null): Generator
-    {
-        $request = $this->buildRequest($provider, $model, $timeout);
-
-        if ($instructions) {
-            $request->withSystemPrompt($instructions);
-        }
-
-        if ($options?->maxTokens) {
-            $request->withMaxTokens($options->maxTokens);
-        }
-
-        if ($options?->temperature !== null) {
-            $request->usingTemperature($options->temperature);
-        }
-
-        $events = $request
-            ->withMessages($this->toBedrockMessages($messages))
-            ->asStream();
-
-        foreach ($events as $event) {
-            if (! is_null($mapped = $this->toLaravelStreamEvent(
-                $invocationId, $event, $provider->name(), $model,
-            ))) {
-                yield $mapped;
-            }
-        }
-    }
-
-    protected function buildRequest(TextProvider $provider, string $model, ?int $timeout): PendingRequest
-    {
-        $config = $provider->config;
-
-        $request = new PendingRequest;
-
-        $request->using('', $model);
-
-        if (! empty($config['region'])) {
-            $request->withRegion($config['region']);
-        }
-
-        if (! empty($config['key'])) {
-            $request->withApiKey($config['key']);
-        }
-
-        if (! empty($timeout)) {
-            $request->withTimeout($timeout);
-        } elseif (! empty($config['timeout'])) {
-            $request->withTimeout((int) $config['timeout']);
-        }
-
-        if (! empty($config['max_tokens'])) {
-            $request->withMaxTokens((int) $config['max_tokens']);
-        }
-
-        return $request;
-    }
-
     protected function toBedrockMessages(array $messages): array
     {
         return collect($messages)
@@ -159,10 +94,47 @@ class BedrockGateway implements TextGateway
     }
 
     /**
+     * Stream text representing the next message in a conversation.
+     *
+     * @param  array<string, Type>|null  $schema
+     */
+    public function streamText(string $invocationId, TextProvider $provider, string $model, ?string $instructions, array $messages = [], array $tools = [], ?array $schema = null, ?TextGenerationOptions $options = null, ?int $timeout = null): Generator
+    {
+        $request = Bedrock::text();
+
+        if ($model) {
+            $request->using(provider: Bedrock::KEY, model: $model);
+        }
+
+        if (! empty($instructions)) {
+            $request->withSystemPrompt($instructions);
+        }
+
+        try {
+            $events = $request
+                ->withMessages($this->toBedrockMessages($messages))
+                ->asStream();
+
+            foreach ($events as $event) {
+                if (! is_null($event = $this->toLaravelStreamEvent(
+                    $invocationId, $event, $provider->name(), $model,
+                ))) {
+                    yield $event;
+                }
+            }
+        } catch (PrismVendorException $e) {
+            throw PrismException::toAiException($e, $provider, $model);
+        }
+    }
+
+    /**
      * @param  array{type: string}  $event
      */
     protected function toLaravelStreamEvent($invocationId, array $event, $provider, $model): ?StreamEvent
     {
+        // type
+        // message_start, content_block_start, content_block_delta, content_block_stop, message_delta, message_stop
+
         return tap(match (data_get($event, 'type')) {
             'content_block_delta' => new TextDelta(
                 id: Str::uuid()->toString(),
