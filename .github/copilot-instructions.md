@@ -19,6 +19,7 @@ Prismにバグがあったので作ったパッケージだったけどその後
 - Bedrock APIキー以外の認証方法にも対応する。Bedrockしか使えない制限があるのはエンプラなのでAPIキーのみだと使いにくいはず。
 - ai-sdk-development.mdには`src/Text/PendingRequest.php`を使うように書いてるけどBedrock APIの呼び方だけ参考にして既存のGatewayクラスに合わせた実装にする。
 - config/bedrock.php の代わりはAttributesやproviderOptions()で可能なはず。
+- ひとまずai-sdk-development.mdに任せてTextがリニューアルできたら他も実装。
 
 GitHub Agentic Workflowsで少しずつ実行。
 
