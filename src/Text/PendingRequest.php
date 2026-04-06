@@ -26,6 +26,12 @@ class PendingRequest
 
     protected int|float|null $temperature = null;
 
+    protected ?string $region = null;
+
+    protected ?string $apiKey = null;
+
+    protected ?int $timeout = null;
+
     /**
      * @var array<int, string|SystemMessage>
      */
@@ -37,6 +43,27 @@ class PendingRequest
     protected array $messages = [];
 
     protected ?UserMessage $prompt = null;
+
+    public function withRegion(string $region): self
+    {
+        $this->region = $region;
+
+        return $this;
+    }
+
+    public function withApiKey(string $apiKey): self
+    {
+        $this->apiKey = $apiKey;
+
+        return $this;
+    }
+
+    public function withTimeout(int $timeout): self
+    {
+        $this->timeout = $timeout;
+
+        return $this;
+    }
 
     /**
      * @param  string  $provider  Ignored, for Prism compatibility
@@ -109,9 +136,9 @@ class PendingRequest
     protected function sendRequest(): HttpResponse
     {
         $model = $this->model ?? Config::string('bedrock.model');
-        $region = Config::string('bedrock.region');
-        $apiKey = Config::string('bedrock.api_key');
-        $timeout = Config::integer('bedrock.timeout', 30);
+        $region = $this->region ?? Config::string('bedrock.region');
+        $apiKey = $this->apiKey ?? Config::string('bedrock.api_key');
+        $timeout = $this->timeout ?? Config::integer('bedrock.timeout', 30);
 
         $url = "https://bedrock-runtime.{$region}.amazonaws.com/model/{$model}/invoke";
 
@@ -139,9 +166,9 @@ class PendingRequest
     protected function sendRequestStream(): HttpResponse
     {
         $model = $this->model ?? Config::string('bedrock.model');
-        $region = Config::string('bedrock.region');
-        $apiKey = Config::string('bedrock.api_key');
-        $timeout = Config::integer('bedrock.timeout', 30);
+        $region = $this->region ?? Config::string('bedrock.region');
+        $apiKey = $this->apiKey ?? Config::string('bedrock.api_key');
+        $timeout = $this->timeout ?? Config::integer('bedrock.timeout', 30);
 
         $url = "https://bedrock-runtime.{$region}.amazonaws.com/model/{$model}/invoke-with-response-stream";
 
