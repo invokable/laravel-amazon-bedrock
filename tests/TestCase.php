@@ -26,11 +26,12 @@ abstract class TestCase extends BaseTestCase
         $app['config']->set('bedrock.anthropic_version', 'bedrock-2023-05-31');
         $app['config']->set('bedrock.max_tokens', 2048);
 
-        $app['config']->set('ai.default', 'bedrock-anthropic');
+        $app['config']->set('ai.default', 'bedrock');
         $app['config']->set('ai.providers', [
-            'bedrock-anthropic' => [
-                'driver' => 'bedrock-anthropic',
+            'bedrock' => [
+                'driver' => 'bedrock',
                 'key' => 'test-api-key',
+                'region' => 'us-east-1',
             ],
         ]);
     }
