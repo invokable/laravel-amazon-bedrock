@@ -233,9 +233,9 @@ it('can generate text', function () {
 Generate vector embeddings using Amazon Titan Embeddings V2:
 
 ```php
-use function Laravel\Ai\provider;
+use Laravel\Ai\Embeddings;
 
-$response = provider('bedrock')->embeddings(['Hello world', 'Foo bar']);
+$response = Embeddings::for(['Hello world', 'Foo bar'])->generate('bedrock');
 
 // Access first embedding vector
 $vector = $response->first();
@@ -251,17 +251,15 @@ echo $response->tokens; // total token count
 Specify custom dimensions (256, 512, or 1024 for Titan Embeddings V2):
 
 ```php
-$response = provider('bedrock')->embeddings(['Hello world'], dimensions: 512);
+$response = Embeddings::for(['Hello world'])->dimensions(512)->generate('bedrock');
 ```
 
 Use a custom model:
 
 ```php
-$response = provider('bedrock')->embeddings(
-    inputs: ['Hello world'],
-    dimensions: 1024,
-    model: 'amazon.titan-embed-text-v2:0',
-);
+$response = Embeddings::for(['Hello world'])
+    ->dimensions(1024)
+    ->generate('bedrock', 'amazon.titan-embed-text-v2:0');
 ```
 
 ## License
