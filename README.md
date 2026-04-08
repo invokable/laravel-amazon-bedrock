@@ -1,4 +1,4 @@
-# Tiny Amazon Bedrock wrapper for Laravel
+# Amazon Bedrock driver for Laravel AI SDK
 
 [![Maintainability](https://qlty.sh/gh/invokable/projects/laravel-amazon-bedrock/maintainability.svg)](https://qlty.sh/gh/invokable/projects/laravel-amazon-bedrock)
 [![Code Coverage](https://qlty.sh/gh/invokable/projects/laravel-amazon-bedrock/coverage.svg)](https://qlty.sh/gh/invokable/projects/laravel-amazon-bedrock)
@@ -6,15 +6,12 @@
 
 ## Overview
 
-A lightweight Laravel package to easily interact with Amazon Bedrock, specifically for generating text.
+An Amazon Bedrock driver for the [Laravel AI SDK](https://laravel.com/docs/ai-sdk), enabling text generation and streaming via Anthropic Claude models on AWS Bedrock.
 
-- **Features**: Text Generation only.
-- **Supported Model**: Anthropic Claude Haiku/Sonnet/Opus 4 and later.(Default: Sonnet 4.6)
-- **Authentication**: Bedrock API Key only.
-- **Cache Control**: Always enabled ephemeral cache at system prompt.
-- **Minimal Dependencies**: No extra dependencies except Laravel framework.
-
-We created our own package because `prism-php/bedrock` often doesn't support breaking changes in `prism-php/prism`. If you need more functionality than this package, please use [Prism](https://github.com/prism-php).
+- **Features**: Text generation and streaming.
+- **Supported Models**: Anthropic Claude Haiku / Sonnet / Opus 4 and later (default: Claude Sonnet 4.6).
+- **Authentication**: Bedrock API key.
+- **Cache Control**: Ephemeral cache always enabled on system prompts.
 
 ## Requirements
 
@@ -25,167 +22,85 @@ We created our own package because `prism-php/bedrock` often doesn't support bre
 
 ```shell
 composer require revolution/laravel-amazon-bedrock
+php artisan vendor:publish --provider="Laravel\Ai\AiServiceProvider"
 ```
 
 ## Configuration
 
-Publishing the config file is optional. Everything can be set in `.env`.
+Add the `bedrock` driver to `config/ai.php`:
+
+```php
+// config/ai.php
+'default' => 'bedrock',
+
+'providers' => [
+    'bedrock' => [
+        'driver' => 'bedrock',
+        'key'    => env('AWS_BEDROCK_API_KEY', ''),
+        'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
+    ],
+],
+```
+
+Set the required values in `.env`:
 
 ```dotenv
 AWS_BEDROCK_API_KEY=your_api_key
-AWS_BEDROCK_MODEL=global.anthropic.claude-sonnet-4-5-20250929-v1:0
 AWS_DEFAULT_REGION=us-east-1
 ```
 
-Bedrock API key is obtained from the AWS Management Console.
+The Bedrock API key is obtained from the AWS Management Console.
+
+### Optional config keys
+
+| Key | Description | Default |
+|---|---|---|
+| `timeout` | HTTP request timeout in seconds | 30 |
+| `max_tokens` | Default max tokens per request | 8096 |
+| `models.text.default` | Default text model | `global.anthropic.claude-sonnet-4-6:0` |
+| `models.text.cheapest` | Cheapest text model | `global.anthropic.claude-haiku-4-5-20251001-v1:0` |
+| `models.text.smartest` | Smartest text model | `global.anthropic.claude-opus-4-6-v1:0` |
 
 ## Usage
 
-Usage is almost the same, making it easy to return to Prism, but it doesn't have any other features.
+### Agent Class
 
-```php
-use Revolution\Amazon\Bedrock\Facades\Bedrock;
+Create an agent class using the Artisan command:
 
-$response = Bedrock::text()
-                   ->using(Bedrock::KEY, config('bedrock.model'))
-                   ->withSystemPrompt('You are a helpful assistant.')
-                   ->withPrompt('Tell me a joke about programming.')
-                   ->asText();
-
-echo $response->text;
+```shell
+php artisan make:agent BedrockAgent
 ```
 
-### Conversation History
-
-For multi-turn conversations, use `withMessages()` to pass previous messages.
-
 ```php
-use Revolution\Amazon\Bedrock\Facades\Bedrock;
-use Revolution\Amazon\Bedrock\ValueObjects\Messages\UserMessage;
-use Revolution\Amazon\Bedrock\ValueObjects\Messages\AssistantMessage;
+<?php
 
-$response = Bedrock::text()
-                   ->withSystemPrompt('You are a helpful assistant.')
-                   ->withMessages([
-                       new UserMessage('What is JSON?'),
-                       new AssistantMessage('JSON is a lightweight data format...'),
-                   ])
-                   ->withPrompt('Can you show me an example?')
-                   ->asText();
+namespace App\Ai\Agents;
 
-echo $response->text;
-```
+use Laravel\Ai\Contracts\Agent;
+use Laravel\Ai\Promptable;
 
-Example with Eloquent conversation history
+class BedrockAgent implements Agent
+{
+    use Promptable;
 
-```php
-use App\Models\Message;
-use Revolution\Amazon\Bedrock\Facades\Bedrock;
-use Revolution\Amazon\Bedrock\ValueObjects\Messages\UserMessage;
-use Revolution\Amazon\Bedrock\ValueObjects\Messages\AssistantMessage;
-
-$messages = Message::query()
-    ->where('conversation_id', $conversationId)
-    ->orderBy('created_at')
-    ->get()
-    ->map(fn (Message $message) => match ($message->role) {
-        'user' => UserMessage::make($message->content),
-        'assistant' => AssistantMessage::make($message->content),
-    })
-    ->all();
-
-$response = Bedrock::text()
-                   ->withSystemPrompt('You are a helpful assistant.')
-                   ->withMessages($messages)
-                   ->withPrompt($newUserMessage)
-                   ->asText();
-```
-
-### Streaming
-
-```php
-use Revolution\Amazon\Bedrock\Facades\Bedrock;
-
-$stream = Bedrock::text()
-                 ->using(Bedrock::KEY, config('bedrock.model'))
-                 ->withSystemPrompt('You are a helpful assistant.')
-                 ->withPrompt('Tell me a joke about programming.')
-                 ->asStream();
-
-foreach ($stream as $event) {
-    if (data_get($event, 'type') === 'content_block_delta') {
-        echo data_get($event, 'delta.text');
+    public function instructions(): string
+    {
+        return 'You are an expert at software development.';
     }
 }
 ```
 
-## Testing
-
 ```php
-use Revolution\Amazon\Bedrock\Facades\Bedrock;
-use Revolution\Amazon\Bedrock\ValueObjects\Usage;
-use Revolution\Amazon\Bedrock\Testing\TextResponseFake;
+use App\Ai\Agents\BedrockAgent;
 
-it('can generate text', function () {
-    $fakeResponse = TextResponseFake::make()
-        ->withText('Hello, I am Claude!')
-        ->withUsage(new Usage(10, 20));
+$response = (new BedrockAgent)->prompt('Tell me about Laravel');
 
-    // Set up the fake
-    $fake = Bedrock::fake([$fakeResponse]);
-
-    // Run your code
-    $response = Bedrock::text()
-        ->using(Bedrock::KEY, 'global.anthropic.claude-sonnet-4-5-20250929-v1:0')
-        ->withPrompt('Who are you?')
-        ->asText();
-
-    // Make assertions
-    expect($response->text)->toBe('Hello, I am Claude!');
-});
+echo $response->text;
 ```
 
-### Streaming Testing
+### Anonymous Agent
 
-```php
-   Bedrock::fake(streamResponses: [
-       StreamResponseFake::make('Hello!'),
-   ]);
-   foreach (Bedrock::text()->withPrompt('Hi')->asStream() as $event) {
-       //
-   }
-
-   // multiple chunks
-   StreamResponseFake::make()->withChunks(['Hello', ' World']);
-```
-
-## Laravel AI SDK Integration
-
-- Experimental implementation.
-- Support only text generation. No other features are supported.
-
-This is an opt-in feature only enabled when the Laravel AI SDK is installed.
-
-```shell
-composer require laravel/ai
-php artisan vendor:publish --provider="Laravel\Ai\AiServiceProvider"
-```
-
-Add the following configuration to `config/ai.php`.
-
-```php
-// config/ai.php
-    'default' => 'bedrock-anthropic',
-
-    'providers' => [
-        'bedrock-anthropic' => [
-            'driver' => 'bedrock-anthropic',
-            'key' => '',
-        ],
-    ],
-```
-
-Usage with agent helper.
+For quick interactions without a dedicated class:
 
 ```php
 use function Laravel\Ai\agent;
@@ -197,7 +112,17 @@ $response = agent(
 echo $response->text;
 ```
 
-Streaming
+### Streaming
+
+```php
+use App\Ai\Agents\BedrockAgent;
+
+Route::get('/stream', function () {
+    return (new BedrockAgent)->stream('Tell me about Laravel');
+});
+```
+
+Or iterate through the events manually:
 
 ```php
 use Laravel\Ai\Streaming\Events\TextDelta;
@@ -213,6 +138,91 @@ foreach ($stream as $event) {
         echo $event->delta;
     }
 }
+```
+
+### Provider Options
+
+To pass Bedrock-specific options such as `anthropic_version`, implement `HasProviderOptions`:
+
+```php
+<?php
+
+namespace App\Ai\Agents;
+
+use Laravel\Ai\Contracts\Agent;
+use Laravel\Ai\Contracts\HasProviderOptions;
+use Laravel\Ai\Enums\Lab;
+use Laravel\Ai\Promptable;
+
+class BedrockAgent implements Agent, HasProviderOptions
+{
+    use Promptable;
+
+    public function instructions(): string
+    {
+        return 'You are an expert at software development.';
+    }
+
+    public function providerOptions(Lab|string $provider): array
+    {
+        return [
+            'anthropic_version' => 'bedrock-2023-05-31',
+        ];
+    }
+}
+```
+
+Supported provider options:
+
+| Option | Description | Default |
+|---|---|---|
+| `anthropic_version` | Anthropic API version for Bedrock | `bedrock-2023-05-31` |
+| `top_k` | Top-K sampling parameter | — |
+| `top_p` | Top-P (nucleus) sampling parameter | — |
+
+### Agent Configuration
+
+Configure text generation options using PHP attributes:
+
+```php
+use Laravel\Ai\Attributes\MaxTokens;
+use Laravel\Ai\Attributes\Temperature;
+use Laravel\Ai\Attributes\Timeout;
+use Laravel\Ai\Contracts\Agent;
+use Laravel\Ai\Promptable;
+
+#[MaxTokens(4096)]
+#[Temperature(0.7)]
+#[Timeout(120)]
+class BedrockAgent implements Agent
+{
+    use Promptable;
+
+    // ...
+}
+```
+
+## Testing
+
+Use `AnonymousAgent::fake()` to test agent interactions:
+
+```php
+use Laravel\Ai\AnonymousAgent;
+use Laravel\Ai\Prompts\AgentPrompt;
+
+use function Laravel\Ai\agent;
+
+it('can generate text', function () {
+    AnonymousAgent::fake();
+
+    $response = agent(
+        instructions: 'You are an expert at software development.',
+    )->prompt('Tell me about Laravel');
+
+    AnonymousAgent::assertPrompted(function (AgentPrompt $prompt) {
+        return $prompt->contains('Laravel');
+    });
+});
 ```
 
 ## License

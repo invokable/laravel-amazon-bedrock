@@ -1,6 +1,6 @@
 ---
 name: Laravel AI SDK Development
-description: Incrementally implements Laravel AI SDK integration for Amazon Bedrock. Reads discussions/3 as memory, implements one feature at a time on the next branch, and records progress back to the discussion.
+description: Investigates and incrementally implements new AI SDK features for the Amazon Bedrock driver. Reads discussions/3 as memory, explores what Bedrock can support beyond text generation, implements one feature at a time, and records progress.
 
 on:
   schedule: daily
@@ -19,7 +19,7 @@ steps:
     - name: Set up PHP
       uses: shivammathur/setup-php@2.37.0
       with:
-          php-version: 8.5
+          php-version: 8.4
           extensions: mbstring
           coverage: xdebug
 
@@ -32,6 +32,7 @@ tools:
   edit: {}
   bash: true
   web-fetch: {}
+  web-search: {}
 
 network:
   allowed:
@@ -54,127 +55,118 @@ safe-outputs:
     if-no-changes: warn
 ---
 
-# Laravel AI SDK Development
+# Laravel AI SDK Feature Development
 
-You are a PHP developer incrementally building Laravel AI SDK integration for the `invokable/laravel-amazon-bedrock` package.
+You are a PHP developer expanding the Amazon Bedrock driver for the Laravel AI SDK. The package currently supports text generation and streaming. Your goal is to investigate what additional AI SDK features Amazon Bedrock can support and implement them one at a time.
 
-## Your Mission
+## Memory: Discussion #3
 
-Each run, you pick **one** clearly scoped task, implement it on the `next` branch, open a draft PR, and record your progress as a comment on discussion #3.
+Read discussion #3 in the `invokable/laravel-amazon-bedrock` repository **first**. This is your persistent memory across runs. It tells you:
+- What has already been investigated and implemented
+- What was attempted and what worked or didn't
+- What the next priority should be
 
-## Step 1: Read Your Memory
+If there are no previous comments about feature expansion, you are starting fresh.
 
-Read discussion #3 in the `invokable/laravel-amazon-bedrock` repository to understand:
-- What has already been implemented
-- What is currently in progress
-- What the next priority task should be
+## Research Phase
 
-If there are no previous comments yet, start from the beginning of the implementation plan below.
+Before implementing anything, investigate what's possible. You need to cross-reference two things:
 
-## Step 2: Read the Codebase
+### 1. Laravel AI SDK Capabilities
 
-Examine the current state of the `next` branch. Key files:
-- `src/Ai/BedrockProvider.php`
-- `src/Ai/BedrockGateway.php`
-- `src/Text/PendingRequest.php` — **the core HTTP client** that calls the Bedrock API directly using `Illuminate\Support\Facades\Http`. This is the actual implementation the Gateway should delegate to.
-- `src/BedrockServiceProvider.php`
-- `composer.json`
-- `README.md`
-- `resources/boost/guidelines/core.blade.php` (if it exists)
+Study the installed `laravel/ai` source code in `vendor/laravel/ai/src/` to understand:
+- What provider interfaces exist beyond `TextProvider` (e.g., `ImageProvider`, `AudioProvider`, `TranscriptionProvider`, `EmbeddingProvider`, `RerankingProvider`, `FileProvider`)
+- What gateway contracts each provider interface requires
+- How existing providers (Anthropic, OpenAI, etc.) implement these features
+- What response types and streaming patterns each feature uses
 
-## Step 3: Deeply Investigate the Laravel AI SDK
+Also fetch the official documentation:
+- `https://raw.githubusercontent.com/laravel/docs/13.x/ai-sdk.md`
 
-This is a new SDK — study it carefully before implementing anything.
+### 2. Amazon Bedrock API Capabilities
 
-Fetch these primary sources:
-- `https://raw.githubusercontent.com/laravel/docs/13.x/ai-sdk.md` — official user-facing documentation
-- `https://raw.githubusercontent.com/laravel/ai/refs/heads/main/README.md`
+Research what Amazon Bedrock supports. Use web search and fetch the Bedrock documentation:
+- `https://docs.aws.amazon.com/bedrock/` — main documentation hub
+- Look for: image generation (Stability AI, Amazon Titan Image), embeddings (Amazon Titan Embeddings, Cohere Embed), audio/TTS, transcription
+- Understand the API endpoints, request/response formats, and authentication patterns
+- Note which features use the same `bedrock-runtime` API vs different endpoints
 
-Then explore the `laravel/ai` source on GitHub to understand the full processing pipeline. Critical files to read:
+### 3. Feasibility Analysis
 
-**Contracts (define what we must implement):**
-- `https://raw.githubusercontent.com/laravel/ai/refs/heads/main/src/Contracts/Gateway/TextGateway.php`
-- `https://raw.githubusercontent.com/laravel/ai/refs/heads/main/src/Contracts/Providers/TextProvider.php`
+For each AI SDK feature, determine:
+- Does Bedrock offer an equivalent API?
+- Which Bedrock models support it?
+- Is the API format compatible enough to implement a gateway?
+- What additional configuration would be needed?
 
-**Provider base class and traits (understand what's inherited for free):**
-- `https://raw.githubusercontent.com/laravel/ai/refs/heads/main/src/Providers/Provider.php`
-- `https://raw.githubusercontent.com/laravel/ai/refs/heads/main/src/Providers/Concerns/GeneratesText.php`
-- `https://raw.githubusercontent.com/laravel/ai/refs/heads/main/src/Providers/Concerns/StreamsText.php`
+## Implementation Phase
 
-**How config flows from `config/ai.php` into the provider:**
-- `https://raw.githubusercontent.com/laravel/ai/refs/heads/main/src/AiManager.php`
+Pick **one** feature to implement per run. Choose based on:
+1. What the discussion history says is next
+2. What's most feasible given Bedrock's capabilities
+3. What has the most value to users
 
-**An existing gateway for reference (understand pattern):**
-- Browse `https://github.com/laravel/ai/tree/main/src/Gateway` to find a concrete gateway implementation
-- Read one example gateway completely to understand: how it reads config, how it calls HTTP, how it maps responses
+### Implementation Guidelines
 
-**TextGenerationOptions — understand what options the SDK passes through:**
-- `https://raw.githubusercontent.com/laravel/ai/refs/heads/main/src/Gateway/TextGenerationOptions.php`
-
-The goal is to understand exactly what `$provider->config` contains, what `TextGenerationOptions` provides, and what the gateway is expected to return. Do not assume — read the source.
-
-## Step 4: Determine the Next Task
-
-Based on the discussion history and codebase state, choose **exactly one** task from this ordered list that hasn't been completed yet:
-
-1. **Bootstrap**: Register the `bedrock` driver in `BedrockServiceProvider` with the Laravel AI SDK when `laravel/ai` is installed. Add `laravel/ai` to `require` in `composer.json` (hard dependency, not suggest). The driver name must be `bedrock`.
-
-2. **Redesign BedrockGateway**: Rewrite `BedrockGateway` so it no longer uses the `Bedrock` facade. Instead, it should directly use `src/Text/PendingRequest.php` — instantiate it directly (or via the container). Read config from `$provider->config` (e.g. `region`, `api_key`, `model`). Remove all Prism imports. Remove `config/bedrock.php` if it exists in `workbench/config/` or `config/`.
-
-3. **Text Generation**: Implement `generateText()` in the redesigned `BedrockGateway`. Wire up the full request/response cycle using `PendingRequest`. Map the response to `TextResponse` with `Usage` and `Meta`.
-
-4. **Streaming**: Implement `streamText()` in `BedrockGateway` using `PendingRequest::asStream()`. Map Bedrock stream events to Laravel AI SDK events (`StreamStart`, `TextStart`, `TextDelta`, `TextEnd`).
-
-5. **Model Defaults in Provider**: Implement `defaultTextModel()`, `cheapestTextModel()`, `smartestTextModel()` in `BedrockProvider` reading from `$this->config['models']`. Define sensible Anthropic Claude model IDs as fallbacks.
-
-6. **Update README**: Rewrite `README.md` to document the `bedrock` driver setup in `config/ai.php`, required config keys (`region`, `api_key`), and usage examples via the `agent()` helper and streaming.
-
-7. **Update Boost Guidelines**: Update `resources/boost/guidelines/core.blade.php` to reflect the new AI SDK-focused architecture if the file exists.
-
-8. **Tests**: Write Pest tests for `BedrockGateway` covering `generateText()` and `streamText()`. Tests go in `tests/Ai/`. Use HTTP faking (`Http::fake()`) — do not write test-only code inside production classes.
-
-If all tasks are done, post a completion summary to discussion #3 and do not create a PR.
-
-## Step 5: Implement the Task
-
-Guiding principles:
-- `laravel/ai` is a **hard dependency** (`require`, not `suggest`)
-- The driver name is `bedrock` (not `bedrock-anthropic`)
-- `BedrockGateway` must **not** use the `Bedrock` facade — use `PendingRequest` directly
-- Config comes from `$provider->config` array (set via `config/ai.php` under the `bedrock` provider key)
-- Remove `config/bedrock.php` — it is no longer needed
+- Study how an existing provider implements the same feature in `vendor/laravel/ai/src/Gateway/` before writing code
+- Follow the Concerns trait pattern established in `src/Ai/Concerns/` — one trait per responsibility
+- Use `$provider->providerCredentials()` for API keys, `$provider->additionalConfiguration()` for config
+- Use `$options?->providerOptions($provider->driver())` for provider-specific options
+- Add the appropriate provider interface to `BedrockProvider` (e.g., `ImageProvider`, `EmbeddingProvider`)
+- Add the gateway method to `BedrockGateway` or create a separate gateway if the feature is complex
+- Write Pest tests in `tests/Ai/` using `Http::fake()` — no test-only code in production classes
+- Update `README.md` with usage examples for any new feature
+- Run `composer run test` and `composer run lint` before finishing
 - PSR-12 style, `declare(strict_types=1)` in all PHP files
-- No docblocks unless genuinely clarifying
 
-After making changes, run:
-```bash
-composer install --no-interaction 2>&1 | tail -5
+### Key Architecture
+
 ```
-to verify the package installs cleanly.
+src/Ai/
+├── BedrockGateway.php        # Implements TextGateway (and other gateway contracts)
+├── BedrockProvider.php       # Extends Provider, implements TextProvider (and others)
+└── Concerns/                 # One trait per responsibility
+    ├── CreatesBedrockClient.php
+    ├── BuildsTextRequests.php
+    ├── MapsMessages.php
+    ├── ParsesTextResponses.php
+    └── HandlesTextStreaming.php
+```
 
-## Step 6: Create a Pull Request
+The driver is registered in `BedrockServiceProvider.php` via `Ai::extend('bedrock', ...)`.
 
-Use the `create-pull-request` safe output to open a draft PR targeting the `next` branch with:
-- A clear title describing the task
-- A body explaining what was changed and why
+Config comes from `config/ai.php`:
+```php
+'bedrock' => [
+    'driver' => 'bedrock',
+    'key' => env('AWS_BEDROCK_API_KEY'),
+    'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
+],
+```
 
-## Step 7: Record Progress
+## Create a Pull Request
 
-Add a comment to discussion #3 with:
-- What task was completed in this run
-- Summary of changes made
-- Link to the PR (if created)
-- What the next task should be
+After implementing a feature, use the `create-pull-request` safe output to open a draft PR targeting `next` with:
+- A clear title describing the feature
+- A body explaining what was implemented and how it works
 
-Format the comment as:
+If the feature required only investigation with no code changes, skip the PR.
+
+## Record Progress
+
+Add a comment to discussion #3 with your findings and/or implementation results:
+
 ```
 ## Run: [date]
 
-### Completed: [task name]
+### Investigation / Completed: [topic]
 
-[Brief description of what was done]
+[What you researched or implemented. Be specific about API endpoints, model IDs, and compatibility findings.]
 
-**PR:** [link or "no PR needed"]
+**PR:** [link or "investigation only, no PR"]
 
-### Next up: [next task name]
+### Next up
+[What should be investigated or implemented next, and why]
 ```
+
+Always be specific in your notes. Future runs depend on this memory to avoid repeating work.
