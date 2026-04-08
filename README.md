@@ -6,10 +6,11 @@
 
 ## Overview
 
-An Amazon Bedrock driver for the [Laravel AI SDK](https://laravel.com/docs/ai-sdk), enabling text generation and streaming via Anthropic Claude models on AWS Bedrock.
+An Amazon Bedrock driver for the [Laravel AI SDK](https://laravel.com/docs/ai-sdk), enabling text generation, streaming, and embeddings via models on AWS Bedrock.
 
-- **Features**: Text generation and streaming.
-- **Supported Models**: Anthropic Claude Haiku / Sonnet / Opus 4 and later (default: Claude Sonnet 4.6).
+- **Features**: Text generation, streaming, embeddings.
+- **Supported Text Models**: Anthropic Claude Haiku / Sonnet / Opus 4 and later (default: Claude Sonnet 4.6).
+- **Supported Embedding Models**: Amazon Titan Embeddings V2 (default), Cohere Embed English/Multilingual V3.
 - **Authentication**: Bedrock API key.
 - **Cache Control**: Ephemeral cache always enabled on system prompts.
 
@@ -60,6 +61,8 @@ The Bedrock API key is obtained from the AWS Management Console.
 | `models.text.default` | Default text model | `global.anthropic.claude-sonnet-4-6:0` |
 | `models.text.cheapest` | Cheapest text model | `global.anthropic.claude-haiku-4-5-20251001-v1:0` |
 | `models.text.smartest` | Smartest text model | `global.anthropic.claude-opus-4-6-v1:0` |
+| `models.embeddings.default` | Default embeddings model | `amazon.titan-embed-text-v2:0` |
+| `models.embeddings.dimensions` | Default embedding dimensions | `1024` |
 
 ## Usage
 
@@ -223,6 +226,42 @@ it('can generate text', function () {
         return $prompt->contains('Laravel');
     });
 });
+```
+
+## Embeddings
+
+Generate vector embeddings using Amazon Titan Embeddings V2:
+
+```php
+use function Laravel\Ai\provider;
+
+$response = provider('bedrock')->embeddings(['Hello world', 'Foo bar']);
+
+// Access first embedding vector
+$vector = $response->first();
+
+// Iterate all embeddings
+foreach ($response as $embedding) {
+    // $embedding is an array of float values
+}
+
+echo $response->tokens; // total token count
+```
+
+Specify custom dimensions (256, 512, or 1024 for Titan Embeddings V2):
+
+```php
+$response = provider('bedrock')->embeddings(['Hello world'], dimensions: 512);
+```
+
+Use a custom model:
+
+```php
+$response = provider('bedrock')->embeddings(
+    inputs: ['Hello world'],
+    dimensions: 1024,
+    model: 'amazon.titan-embed-text-v2:0',
+);
 ```
 
 ## License
