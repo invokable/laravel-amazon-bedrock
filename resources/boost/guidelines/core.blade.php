@@ -1,8 +1,54 @@
-## Tiny Amazon Bedrock wrapper for Laravel
+## Amazon Bedrock driver for Laravel AI SDK
 
-A lightweight Laravel package to easily interact with Amazon Bedrock, specifically for generating text.
+An Amazon Bedrock driver for the Laravel AI SDK, enabling text generation and streaming via Anthropic Claude models.
 
-### Usage
+### Configuration
+
+```php
+// config/ai.php
+'default' => 'bedrock',
+
+'providers' => [
+    'bedrock' => [
+        'driver' => 'bedrock',
+        'key'    => env('AWS_BEDROCK_API_KEY', ''),
+        'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
+    ],
+],
+```
+
+### Text Generation
+
+```php
+use function Laravel\Ai\agent;
+
+$response = agent(
+    instructions: 'You are an expert at software development.',
+)->prompt('Tell me about Laravel');
+
+echo $response->text;
+```
+
+### Streaming
+
+```php
+use Laravel\Ai\Streaming\Events\TextDelta;
+use function Laravel\Ai\agent;
+
+$stream = agent(
+    instructions: 'You are an expert at software development.',
+)->stream('Tell me about Laravel');
+
+foreach ($stream as $event) {
+    if ($event instanceof TextDelta) {
+        echo $event->delta;
+    }
+}
+```
+
+### Standalone Usage (Legacy)
+
+The `Bedrock` facade is still available without the AI SDK.
 
 ```php
 use Revolution\Amazon\Bedrock\Facades\Bedrock;
@@ -14,30 +60,4 @@ $response = Bedrock::text()
                    ->asText();
 
 echo $response->text;
-```
-
-### Testing
-
-```php
-use Revolution\Amazon\Bedrock\Facades\Bedrock;
-use Revolution\Amazon\Bedrock\ValueObjects\Usage;
-use Revolution\Amazon\Bedrock\Testing\TextResponseFake;
-
-it('can generate text', function () {
-    $fakeResponse = TextResponseFake::make()
-                                    ->withText('Hello, I am Claude!')
-                                    ->withUsage(new Usage(10, 20));
-
-    // Set up the fake
-    $fake = Bedrock::fake([$fakeResponse]);
-
-    // Run your code
-    $response = Bedrock::text()
-                       ->using(Bedrock::KEY, 'global.anthropic.claude-sonnet-4-5-20250929-v1:0')
-                       ->withPrompt('Who are you?')
-                       ->asText();
-
-    // Make assertions
-    expect($response->text)->toBe('Hello, I am Claude!');
-});
 ```
