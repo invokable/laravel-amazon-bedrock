@@ -6,6 +6,7 @@ use Laravel\Ai\AnonymousAgent;
 use Laravel\Ai\Embeddings;
 use Laravel\Ai\Prompts\AgentPrompt;
 use Laravel\Ai\Prompts\EmbeddingsPrompt;
+use Revolution\Amazon\Bedrock\Bedrock;
 
 use function Laravel\Ai\agent;
 
@@ -33,7 +34,7 @@ describe('Laravel AI SDK', function () {
         $response = Embeddings::for([
             'Laravel is a PHP framework.',
         ])->dimensions(1536)
-            ->generate(provider: 'bedrock');
+            ->generate(provider: Bedrock::KEY);
 
         Embeddings::assertGenerated(function (EmbeddingsPrompt $prompt) {
             return $prompt->contains('Laravel') && $prompt->dimensions === 1536;
