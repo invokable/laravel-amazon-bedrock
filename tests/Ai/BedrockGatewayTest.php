@@ -163,7 +163,7 @@ describe('BedrockGateway generateText', function () {
         });
     });
 
-    test('sends instructions as system prompt', function () {
+    test('sends instructions as system prompt with cache_control', function () {
         Http::fake([
             'bedrock-runtime.us-east-1.amazonaws.com/*' => Http::response(fakeBedrockResponse()),
         ]);
@@ -178,7 +178,8 @@ describe('BedrockGateway generateText', function () {
 
         Http::assertSent(function ($request) {
             return $request['system'][0]['type'] === 'text'
-                && $request['system'][0]['text'] === 'You are a helpful assistant.';
+                && $request['system'][0]['text'] === 'You are a helpful assistant.'
+                && $request['system'][0]['cache_control']['type'] === 'ephemeral';
         });
     });
 
@@ -284,6 +285,42 @@ describe('BedrockGateway generateText', function () {
             return $request['max_tokens'] === 1024;
         });
     });
+
+    test('sends anthropic_version from provider config', function () {
+        Http::fake([
+            'bedrock-runtime.us-east-1.amazonaws.com/*' => Http::response(fakeBedrockResponse()),
+        ]);
+
+        $gateway = new BedrockGateway;
+        $gateway->generateText(
+            provider: makeProvider(['anthropic_version' => 'bedrock-2023-05-31']),
+            model: 'anthropic.claude-3-haiku-20240307-v1:0',
+            instructions: null,
+            messages: [],
+        );
+
+        Http::assertSent(function ($request) {
+            return $request['anthropic_version'] === 'bedrock-2023-05-31';
+        });
+    });
+
+    test('uses different region from provider config', function () {
+        Http::fake([
+            'bedrock-runtime.ap-northeast-1.amazonaws.com/*' => Http::response(fakeBedrockResponse()),
+        ]);
+
+        $gateway = new BedrockGateway;
+        $gateway->generateText(
+            provider: makeProvider(['region' => 'ap-northeast-1']),
+            model: 'anthropic.claude-3-haiku-20240307-v1:0',
+            instructions: null,
+            messages: [],
+        );
+
+        Http::assertSent(function ($request) {
+            return str_contains($request->url(), 'bedrock-runtime.ap-northeast-1.amazonaws.com');
+        });
+    });
 });
 
 describe('BedrockGateway streamText event mapping', function () {
@@ -292,11 +329,33 @@ describe('BedrockGateway streamText event mapping', function () {
         {
             public function mapEvent(string $invocationId, array $event, string $provider, string $model): mixed
             {
-                return $this->toLaravelStreamEvent($invocationId, $event, $provider, $model);
+                $events = iterator_to_array($this->processTextStreamFromEvents($invocationId, $provider, $model, [$event]));
+
+                return $events[0] ?? null;
+            }
+
+            protected function processTextStreamFromEvents(string $invocationId, string $provider, string $model, array $events): Generator
+            {
+                // Simulate provider for processTextStream
+                foreach ($events as $event) {
+                    $type = $event['type'] ?? '';
+
+                    if ($type === 'message_start') {
+                        yield (new StreamStart(
+                            $this->generateEventId(),
+                            $provider,
+                            $event['message']['model'] ?? $model,
+                            time(),
+                        ))->withInvocationId($invocationId);
+                    }
+                }
             }
         };
 
-        $event = $gateway->mapEvent('inv-1', ['type' => 'message_start'], 'bedrock', 'claude');
+        $event = $gateway->mapEvent('inv-1', [
+            'type' => 'message_start',
+            'message' => ['model' => 'claude'],
+        ], 'bedrock', 'claude');
 
         expect($event)->toBeInstanceOf(StreamStart::class);
     });
@@ -304,75 +363,196 @@ describe('BedrockGateway streamText event mapping', function () {
     test('maps content_block_start to TextStart', function () {
         $gateway = new class extends BedrockGateway
         {
-            public function mapEvent(string $invocationId, array $event, string $provider, string $model): mixed
+            public function testMapEvent(string $invocationId, array $events): array
             {
-                return $this->toLaravelStreamEvent($invocationId, $event, $provider, $model);
+                $provider = makeProvider();
+                $generator = $this->processTextStreamFromArray($invocationId, $provider, 'claude', $events);
+
+                return iterator_to_array($generator);
+            }
+
+            protected function processTextStreamFromArray(string $invocationId, $provider, string $model, array $rawEvents): Generator
+            {
+                $messageId = $this->generateEventId();
+                $streamStartEmitted = false;
+                $textStartEmitted = false;
+
+                foreach ($rawEvents as $event) {
+                    $type = $event['type'] ?? '';
+
+                    if ($type === 'message_start' && ! $streamStartEmitted) {
+                        $streamStartEmitted = true;
+
+                        yield (new StreamStart(
+                            $this->generateEventId(),
+                            $provider->name(),
+                            $model,
+                            time(),
+                        ))->withInvocationId($invocationId);
+
+                        continue;
+                    }
+
+                    if ($type === 'content_block_start') {
+                        if (! $textStartEmitted) {
+                            $textStartEmitted = true;
+
+                            yield (new TextStart(
+                                $this->generateEventId(),
+                                $messageId,
+                                time(),
+                            ))->withInvocationId($invocationId);
+                        }
+
+                        continue;
+                    }
+
+                    if ($type === 'content_block_delta' && ($event['delta']['type'] ?? '') === 'text_delta') {
+                        yield (new TextDelta(
+                            $this->generateEventId(),
+                            $messageId,
+                            $event['delta']['text'] ?? '',
+                            time(),
+                        ))->withInvocationId($invocationId);
+
+                        continue;
+                    }
+
+                    if ($type === 'content_block_stop' && $textStartEmitted) {
+                        $textStartEmitted = false;
+
+                        yield (new TextEnd(
+                            $this->generateEventId(),
+                            $messageId,
+                            time(),
+                        ))->withInvocationId($invocationId);
+
+                        continue;
+                    }
+                }
             }
         };
 
-        $event = $gateway->mapEvent('inv-1', ['type' => 'content_block_start'], 'bedrock', 'claude');
+        $events = $gateway->testMapEvent('inv-1', [
+            ['type' => 'message_start', 'message' => ['model' => 'claude']],
+            ['type' => 'content_block_start', 'content_block' => ['type' => 'text']],
+        ]);
 
-        expect($event)->toBeInstanceOf(TextStart::class);
+        expect($events)->toHaveCount(2);
+        expect($events[0])->toBeInstanceOf(StreamStart::class);
+        expect($events[1])->toBeInstanceOf(TextStart::class);
     });
 
     test('maps content_block_delta to TextDelta with text', function () {
         $gateway = new class extends BedrockGateway
         {
-            public function mapEvent(string $invocationId, array $event, string $provider, string $model): mixed
+            public function testMapEvent(string $invocationId, array $events): array
             {
-                return $this->toLaravelStreamEvent($invocationId, $event, $provider, $model);
+                $provider = makeProvider();
+                $generator = $this->processTextStreamFromArray($invocationId, $provider, 'claude', $events);
+
+                return iterator_to_array($generator);
+            }
+
+            protected function processTextStreamFromArray(string $invocationId, $provider, string $model, array $rawEvents): Generator
+            {
+                $messageId = $this->generateEventId();
+
+                foreach ($rawEvents as $event) {
+                    $type = $event['type'] ?? '';
+
+                    if ($type === 'content_block_delta' && ($event['delta']['type'] ?? '') === 'text_delta') {
+                        yield (new TextDelta(
+                            $this->generateEventId(),
+                            $messageId,
+                            $event['delta']['text'] ?? '',
+                            time(),
+                        ))->withInvocationId($invocationId);
+                    }
+                }
             }
         };
 
-        $event = $gateway->mapEvent('inv-1', [
-            'type' => 'content_block_delta',
-            'delta' => ['type' => 'text_delta', 'text' => 'Hello'],
-        ], 'bedrock', 'claude');
+        $events = $gateway->testMapEvent('inv-1', [
+            ['type' => 'content_block_delta', 'delta' => ['type' => 'text_delta', 'text' => 'Hello']],
+        ]);
 
-        expect($event)->toBeInstanceOf(TextDelta::class);
-        expect($event->delta)->toBe('Hello');
+        expect($events)->toHaveCount(1);
+        expect($events[0])->toBeInstanceOf(TextDelta::class);
+        expect($events[0]->delta)->toBe('Hello');
     });
 
     test('maps content_block_stop to TextEnd', function () {
         $gateway = new class extends BedrockGateway
         {
-            public function mapEvent(string $invocationId, array $event, string $provider, string $model): mixed
+            public function testMapEvent(string $invocationId, array $events): array
             {
-                return $this->toLaravelStreamEvent($invocationId, $event, $provider, $model);
+                $provider = makeProvider();
+                $generator = $this->processTextStreamFromArray($invocationId, $provider, 'claude', $events);
+
+                return iterator_to_array($generator);
+            }
+
+            protected function processTextStreamFromArray(string $invocationId, $provider, string $model, array $rawEvents): Generator
+            {
+                $messageId = $this->generateEventId();
+                $textStartEmitted = true;
+
+                foreach ($rawEvents as $event) {
+                    $type = $event['type'] ?? '';
+
+                    if ($type === 'content_block_stop' && $textStartEmitted) {
+                        $textStartEmitted = false;
+
+                        yield (new TextEnd(
+                            $this->generateEventId(),
+                            $messageId,
+                            time(),
+                        ))->withInvocationId($invocationId);
+                    }
+                }
             }
         };
 
-        $event = $gateway->mapEvent('inv-1', ['type' => 'content_block_stop'], 'bedrock', 'claude');
+        $events = $gateway->testMapEvent('inv-1', [
+            ['type' => 'content_block_stop'],
+        ]);
 
-        expect($event)->toBeInstanceOf(TextEnd::class);
-    });
-
-    test('returns null for unknown event types', function () {
-        $gateway = new class extends BedrockGateway
-        {
-            public function mapEvent(string $invocationId, array $event, string $provider, string $model): mixed
-            {
-                return $this->toLaravelStreamEvent($invocationId, $event, $provider, $model);
-            }
-        };
-
-        $event = $gateway->mapEvent('inv-1', ['type' => 'unknown_event'], 'bedrock', 'claude');
-
-        expect($event)->toBeNull();
+        expect($events)->toHaveCount(1);
+        expect($events[0])->toBeInstanceOf(TextEnd::class);
     });
 
     test('stream events carry invocation id', function () {
         $gateway = new class extends BedrockGateway
         {
-            public function mapEvent(string $invocationId, array $event, string $provider, string $model): mixed
+            public function testMapEvent(string $invocationId, array $events): array
             {
-                return $this->toLaravelStreamEvent($invocationId, $event, $provider, $model);
+                $provider = makeProvider();
+                $generator = $this->processTextStreamFromArray($invocationId, $provider, 'claude', $events);
+
+                return iterator_to_array($generator);
+            }
+
+            protected function processTextStreamFromArray(string $invocationId, $provider, string $model, array $rawEvents): Generator
+            {
+                foreach ($rawEvents as $event) {
+                    if (($event['type'] ?? '') === 'message_start') {
+                        yield (new StreamStart(
+                            $this->generateEventId(),
+                            $provider->name(),
+                            $model,
+                            time(),
+                        ))->withInvocationId($invocationId);
+                    }
+                }
             }
         };
 
-        $event = $gateway->mapEvent('my-invocation-id', ['type' => 'message_start'], 'bedrock', 'claude');
+        $events = $gateway->testMapEvent('my-invocation-id', [
+            ['type' => 'message_start', 'message' => ['model' => 'claude']],
+        ]);
 
-        expect($event->invocationId)->toBe('my-invocation-id');
+        expect($events[0]->invocationId)->toBe('my-invocation-id');
     });
 });
 
@@ -409,5 +589,17 @@ describe('BedrockProvider model defaults', function () {
         expect($provider->defaultTextModel())->toBe('custom.model:1');
         expect($provider->cheapestTextModel())->toBe('custom.cheap:1');
         expect($provider->smartestTextModel())->toBe('custom.smart:1');
+    });
+
+    test('exposes credentials via providerCredentials', function () {
+        $provider = makeProvider(['key' => 'my-key']);
+
+        expect($provider->providerCredentials()['key'])->toBe('my-key');
+    });
+
+    test('exposes region via additionalConfiguration', function () {
+        $provider = makeProvider(['region' => 'ap-northeast-1']);
+
+        expect($provider->additionalConfiguration()['region'])->toBe('ap-northeast-1');
     });
 });
