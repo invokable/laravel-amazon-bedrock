@@ -23,7 +23,7 @@ trait GeneratesEmbeddings
         string $model,
         array $inputs,
         int $dimensions,
-        int $timeout = 30,
+        ?int $timeout = null,
     ): EmbeddingsResponse {
         $embeddings = [];
         $totalTokens = 0;
