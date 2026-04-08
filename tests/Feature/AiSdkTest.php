@@ -8,7 +8,7 @@ use Laravel\Ai\Prompts\AgentPrompt;
 use function Laravel\Ai\agent;
 
 describe('Laravel AI SDK', function () {
-    test('bedrock', function () {
+    test('agent helper', function () {
         AnonymousAgent::fake();
 
         $response = agent(
