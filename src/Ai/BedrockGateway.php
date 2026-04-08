@@ -6,15 +6,17 @@ namespace Revolution\Amazon\Bedrock\Ai;
 
 use Closure;
 use Generator;
+use Laravel\Ai\Contracts\Gateway\EmbeddingGateway;
 use Laravel\Ai\Contracts\Gateway\TextGateway;
 use Laravel\Ai\Contracts\Providers\TextProvider;
 use Laravel\Ai\Gateway\TextGenerationOptions;
 use Laravel\Ai\Responses\TextResponse;
 
-class BedrockGateway implements TextGateway
+class BedrockGateway implements EmbeddingGateway, TextGateway
 {
     use Concerns\BuildsTextRequests;
     use Concerns\CreatesBedrockClient;
+    use Concerns\GeneratesEmbeddings;
     use Concerns\HandlesTextStreaming;
     use Concerns\MapsMessages;
     use Concerns\ParsesTextResponses;
