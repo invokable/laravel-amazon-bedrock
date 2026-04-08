@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Facades\Http;
+use Laravel\Ai\Enums\Lab;
 use Laravel\Ai\Gateway\TextGenerationOptions;
 use Laravel\Ai\Messages\Message;
 use Laravel\Ai\Responses\TextResponse;
@@ -25,6 +26,25 @@ function makeProvider(array $config = []): BedrockProvider
         ], $config),
         events: app(Dispatcher::class),
     );
+}
+
+function makeOptionsWithProviderOptions(array $providerOptions, ?int $maxTokens = null, ?float $temperature = null): TextGenerationOptions
+{
+    return new class($providerOptions, $maxTokens, $temperature) extends TextGenerationOptions
+    {
+        public function __construct(
+            private readonly array $testProviderOptions,
+            ?int $maxTokens = null,
+            ?float $temperature = null,
+        ) {
+            parent::__construct(maxTokens: $maxTokens, temperature: $temperature);
+        }
+
+        public function providerOptions(Lab|string $provider): ?array
+        {
+            return $this->testProviderOptions;
+        }
+    };
 }
 
 function fakeBedrockResponse(string $text = 'Hello!', array $usage = []): array
@@ -286,7 +306,48 @@ describe('BedrockGateway generateText', function () {
         });
     });
 
-    test('sends anthropic_version from provider config', function () {
+    test('sends default anthropic_version when not specified', function () {
+        Http::fake([
+            'bedrock-runtime.us-east-1.amazonaws.com/*' => Http::response(fakeBedrockResponse()),
+        ]);
+
+        $gateway = new BedrockGateway;
+        $gateway->generateText(
+            provider: makeProvider(),
+            model: 'anthropic.claude-3-haiku-20240307-v1:0',
+            instructions: null,
+            messages: [],
+        );
+
+        Http::assertSent(function ($request) {
+            return $request['anthropic_version'] === 'bedrock-2023-05-31';
+        });
+    });
+
+    test('uses anthropic_version from providerOptions', function () {
+        Http::fake([
+            'bedrock-runtime.us-east-1.amazonaws.com/*' => Http::response(fakeBedrockResponse()),
+        ]);
+
+        $options = makeOptionsWithProviderOptions([
+            'anthropic_version' => 'custom-2024-01-01',
+        ]);
+
+        $gateway = new BedrockGateway;
+        $gateway->generateText(
+            provider: makeProvider(),
+            model: 'anthropic.claude-3-haiku-20240307-v1:0',
+            instructions: null,
+            messages: [],
+            options: $options,
+        );
+
+        Http::assertSent(function ($request) {
+            return $request['anthropic_version'] === 'custom-2024-01-01';
+        });
+    });
+
+    test('uses anthropic_version from provider config as fallback', function () {
         Http::fake([
             'bedrock-runtime.us-east-1.amazonaws.com/*' => Http::response(fakeBedrockResponse()),
         ]);
@@ -301,6 +362,31 @@ describe('BedrockGateway generateText', function () {
 
         Http::assertSent(function ($request) {
             return $request['anthropic_version'] === 'bedrock-2023-05-31';
+        });
+    });
+
+    test('merges extra providerOptions into request body', function () {
+        Http::fake([
+            'bedrock-runtime.us-east-1.amazonaws.com/*' => Http::response(fakeBedrockResponse()),
+        ]);
+
+        $options = makeOptionsWithProviderOptions([
+            'top_k' => 40,
+            'top_p' => 0.9,
+        ]);
+
+        $gateway = new BedrockGateway;
+        $gateway->generateText(
+            provider: makeProvider(),
+            model: 'anthropic.claude-3-haiku-20240307-v1:0',
+            instructions: null,
+            messages: [],
+            options: $options,
+        );
+
+        Http::assertSent(function ($request) {
+            return $request['top_k'] === 40
+                && $request['top_p'] === 0.9;
         });
     });
 

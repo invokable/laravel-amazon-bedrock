@@ -17,9 +17,16 @@ trait BuildsTextRequests
         ?TextGenerationOptions $options,
     ): array {
         $config = $provider->additionalConfiguration();
+        $providerOptions = $options?->providerOptions($provider->driver()) ?? [];
+
+        $anthropicVersion = $providerOptions['anthropic_version']
+            ?? $config['anthropic_version']
+            ?? 'bedrock-2023-05-31';
+
+        unset($providerOptions['anthropic_version']);
 
         $body = [
-            'anthropic_version' => $config['anthropic_version'] ?? 'bedrock-2023-05-31',
+            'anthropic_version' => $anthropicVersion,
             'max_tokens' => $options?->maxTokens ?? (int) ($config['max_tokens'] ?? 8096),
             'messages' => $this->mapMessages($messages),
         ];
@@ -32,7 +39,7 @@ trait BuildsTextRequests
             $body['temperature'] = $options->temperature;
         }
 
-        return $body;
+        return array_merge($body, $providerOptions);
     }
 
     /**
