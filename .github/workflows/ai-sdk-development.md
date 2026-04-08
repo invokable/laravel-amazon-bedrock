@@ -12,6 +12,10 @@ permissions:
   issues: read
   pull-requests: read
 
+engine:
+  id: copilot
+  model: claude-opus-4.6
+
 checkout:
   ref: next
 
@@ -32,13 +36,13 @@ tools:
   edit: {}
   bash: true
   web-fetch: {}
-  web-search: {}
 
 network:
   allowed:
     - github
     - threat-detection
     - php
+    - "docs.aws.amazon.com"
 
 safe-outputs:
   add-comment:
