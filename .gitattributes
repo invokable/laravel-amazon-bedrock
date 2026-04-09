@@ -15,5 +15,6 @@ boost.json export-ignore
 testbench.yaml export-ignore
 /workbench export-ignore
 .mcp.json export-ignore
+/.vscode export-ignore
 
 .github/workflows/*.lock.yml linguist-generated=true merge=ours
