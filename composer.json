@@ -3,6 +3,7 @@
   "description": "Tiny Amazon Bedrock wrapper for Laravel",
   "keywords": [
     "laravel",
+    "laravel-ai-sdk",
     "amazon-bedrock"
   ],
   "type": "library",
