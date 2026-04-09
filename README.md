@@ -63,16 +63,16 @@ The Bedrock API key is obtained from the AWS Management Console.
 
 ### Optional config keys
 
-| Key | Description | Default |
-|---|---|---|
-| `timeout` | HTTP request timeout in seconds | 30 |
-| `max_tokens` | Default max tokens per request | 8096 |
-| `models.text.default` | Default text model | `global.anthropic.claude-sonnet-4-6:0` |
-| `models.text.cheapest` | Cheapest text model | `global.anthropic.claude-haiku-4-5-20251001-v1:0` |
-| `models.text.smartest` | Smartest text model | `global.anthropic.claude-opus-4-6-v1:0` |
-| `models.embeddings.default` | Default embeddings model | `amazon.titan-embed-text-v2:0` |
-| `models.embeddings.dimensions` | Default embedding dimensions | `1024` |
-| `models.image.default` | Default image model | `amazon.nova-canvas-v1:0` |
+| Key                            | Description                     | Default                                           |
+|--------------------------------|---------------------------------|---------------------------------------------------|
+| `timeout`                      | HTTP request timeout in seconds | 30                                                |
+| `max_tokens`                   | Default max tokens per request  | 8096                                              |
+| `models.text.default`          | Default text model              | `global.anthropic.claude-sonnet-4-6:0`            |
+| `models.text.cheapest`         | Cheapest text model             | `global.anthropic.claude-haiku-4-5-20251001-v1:0` |
+| `models.text.smartest`         | Smartest text model             | `global.anthropic.claude-opus-4-6-v1:0`           |
+| `models.embeddings.default`    | Default embeddings model        | `amazon.titan-embed-text-v2:0`                    |
+| `models.embeddings.dimensions` | Default embedding dimensions    | `1024`                                            |
+| `models.image.default`         | Default image model             | `amazon.nova-canvas-v1:0`                         |
 
 ## Usage
 
@@ -187,11 +187,11 @@ class BedrockAgent implements Agent, HasProviderOptions
 
 Supported provider options:
 
-| Option | Description | Default |
-|---|---|---|
-| `anthropic_version` | Anthropic API version for Bedrock | `bedrock-2023-05-31` |
-| `top_k` | Top-K sampling parameter | — |
-| `top_p` | Top-P (nucleus) sampling parameter | — |
+| Option              | Description                        | Default              |
+|---------------------|------------------------------------|----------------------|
+| `anthropic_version` | Anthropic API version for Bedrock  | `bedrock-2023-05-31` |
+| `top_k`             | Top-K sampling parameter           | —                    |
+| `top_p`             | Top-P (nucleus) sampling parameter | —                    |
 
 ### Agent Configuration
 
@@ -245,7 +245,7 @@ Generate images using Amazon Nova Canvas:
 ```php
 use Laravel\Ai\Image;
 
-$response = Image::of('A cute steampunk robot')->generate('bedrock');
+$response = Image::of('A cute steampunk robot')->generate(provider: 'bedrock');
 
 // Get the first image
 $image = $response->firstImage();
@@ -263,14 +263,14 @@ Specify size and quality:
 $response = Image::of('A beautiful landscape')
     ->size('3:2')           // '1:1', '3:2', or '2:3'
     ->quality('high')       // 'low', 'medium', or 'high' (high → Nova Canvas "premium")
-    ->generate('bedrock');
+    ->generate(provider: 'bedrock');
 ```
 
 Use a custom model:
 
 ```php
 $response = Image::of('A sunset')
-    ->generate('bedrock', 'stability.sd3-5-large-v1:0');
+    ->generate(provider: 'bedrock', model: 'stability.sd3-5-large-v1:0');
 ```
 
 ## Embeddings
@@ -280,7 +280,7 @@ Generate vector embeddings using Amazon Titan Embeddings V2:
 ```php
 use Laravel\Ai\Embeddings;
 
-$response = Embeddings::for(['Hello world', 'Foo bar'])->generate('bedrock');
+$response = Embeddings::for(['Hello world', 'Foo bar'])->generate(provider: 'bedrock');
 
 // Access first embedding vector
 $vector = $response->first();
@@ -296,7 +296,7 @@ echo $response->tokens; // total token count
 Specify custom dimensions (256, 512, or 1024 for Titan Embeddings V2):
 
 ```php
-$response = Embeddings::for(['Hello world'])->dimensions(512)->generate('bedrock');
+$response = Embeddings::for(['Hello world'])->dimensions(512)->generate(provider: 'bedrock');
 ```
 
 Use a custom model:
@@ -304,7 +304,7 @@ Use a custom model:
 ```php
 $response = Embeddings::for(['Hello world'])
     ->dimensions(1024)
-    ->generate('bedrock', 'amazon.titan-embed-text-v2:0');
+    ->generate(provider: 'bedrock', model: 'amazon.titan-embed-text-v2:0');
 ```
 
 ## License
