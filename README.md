@@ -8,7 +8,7 @@
 
 An Amazon Bedrock driver for the [Laravel AI SDK](https://laravel.com/docs/ai-sdk), enabling text generation, streaming, embeddings, and image generation via models on AWS Bedrock.
 
-| Feature            | Models                                                                          |
+| Feature            | Supported Models                                                                |
 |--------------------|---------------------------------------------------------------------------------|
 | Text               | Anthropic Claude Haiku / Sonnet / Opus 4 and later (default: Claude Sonnet 4.6) |
 | Images             | Amazon Nova Canvas (default), Stability AI models.                              |
