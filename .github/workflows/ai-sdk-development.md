@@ -53,7 +53,6 @@ safe-outputs:
     max: 1
   create-pull-request:
     base-branch: main
-    title-prefix: "[ai-sdk] "
     labels: [ai-sdk]
     draft: true
     if-no-changes: warn
