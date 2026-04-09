@@ -17,7 +17,7 @@ engine:
   model: claude-opus-4.6
 
 checkout:
-  ref: next
+  ref: main
 
 steps:
     - name: Set up PHP
@@ -52,7 +52,7 @@ safe-outputs:
     pull-requests: false
     max: 1
   create-pull-request:
-    base-branch: next
+    base-branch: main
     title-prefix: "[ai-sdk] "
     labels: [ai-sdk]
     draft: true
@@ -150,7 +150,7 @@ Config comes from `config/ai.php`:
 
 ## Create a Pull Request
 
-After implementing a feature, use the `create-pull-request` safe output to open a draft PR targeting `next` with:
+After implementing a feature, use the `create-pull-request` safe output to open a draft PR targeting `main` with:
 - A clear title describing the feature
 - A body explaining what was implemented and how it works
 
