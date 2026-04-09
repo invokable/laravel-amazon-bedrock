@@ -117,7 +117,8 @@ Pick **one** feature to implement per run. Choose based on:
 - Use `$options?->providerOptions($provider->driver())` for provider-specific options
 - Add the appropriate provider interface to `BedrockProvider` (e.g., `ImageProvider`, `EmbeddingProvider`)
 - Add the gateway method to `BedrockGateway` or create a separate gateway if the feature is complex
-- Write Pest tests in `tests/Ai/` using `Http::fake()` — no test-only code in production classes
+- Write Pest tests in `tests/Ai/` using `Http::fake()`
+- Write Pest tests in `tests/Feature/` using the Laravel AI SDK's `fake()` function
 - Update `README.md` with usage examples for any new feature
 - Run `composer run test` and `composer run lint` before finishing
 - PSR-12 style, `declare(strict_types=1)` in all PHP files
