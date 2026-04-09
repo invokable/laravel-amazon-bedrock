@@ -1,6 +1,6 @@
 {
   "name": "revolution/laravel-amazon-bedrock",
-  "description": "Tiny Amazon Bedrock wrapper for Laravel",
+  "description": "Amazon Bedrock driver for for Laravel AI SDK",
   "keywords": [
     "laravel",
     "laravel-ai-sdk",
