@@ -18,7 +18,7 @@ An Amazon Bedrock driver for the [Laravel AI SDK](https://laravel.com/docs/ai-sd
 | Reranking          |                                                                                 |
 | Files              |                                                                                 |
 
-- **Authentication**: Bedrock API key.
+- **Authentication**: Bedrock API key. Other authentication methods are being planned.
 - **Cache Control**: Ephemeral cache always enabled on system prompts.
 
 ## Requirements
