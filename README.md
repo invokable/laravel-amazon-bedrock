@@ -8,10 +8,16 @@
 
 An Amazon Bedrock driver for the [Laravel AI SDK](https://laravel.com/docs/ai-sdk), enabling text generation, streaming, embeddings, and image generation via models on AWS Bedrock.
 
-- **Features**: Text generation, streaming, embeddings, image generation.
-- **Supported Text Models**: Anthropic Claude Haiku / Sonnet / Opus 4 and later (default: Claude Sonnet 4.6).
-- **Supported Embedding Models**: Amazon Titan Embeddings V2 (default), Cohere Embed English/Multilingual V3.
-- **Supported Image Models**: Amazon Nova Canvas (default), Stability AI models.
+| Feature            | Models                                                                          |
+|--------------------|---------------------------------------------------------------------------------|
+| Text               | Anthropic Claude Haiku / Sonnet / Opus 4 and later (default: Claude Sonnet 4.6) |
+| Images             | Amazon Nova Canvas (default), Stability AI models.                              |
+| Audio(TTS)         |                                                                                 |
+| Transcription(STT) |                                                                                 |
+| Embeddings         | Amazon Titan Embeddings V2 (default), Cohere Embed English/Multilingual V3.     |
+| Reranking          |                                                                                 |
+| Files              |                                                                                 |
+
 - **Authentication**: Bedrock API key.
 - **Cache Control**: Ephemeral cache always enabled on system prompts.
 
@@ -34,6 +40,8 @@ Add the `bedrock` driver to `config/ai.php`:
 ```php
 // config/ai.php
 'default' => 'bedrock',
+'default_for_images' => 'bedrock',
+'default_for_embeddings' => 'bedrock',
 
 'providers' => [
     'bedrock' => [
