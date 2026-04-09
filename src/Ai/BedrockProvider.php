@@ -6,21 +6,27 @@ namespace Revolution\Amazon\Bedrock\Ai;
 
 use Illuminate\Contracts\Events\Dispatcher;
 use Laravel\Ai\Contracts\Gateway\EmbeddingGateway;
+use Laravel\Ai\Contracts\Gateway\ImageGateway;
 use Laravel\Ai\Contracts\Gateway\TextGateway;
 use Laravel\Ai\Contracts\Providers\EmbeddingProvider;
+use Laravel\Ai\Contracts\Providers\ImageProvider;
 use Laravel\Ai\Contracts\Providers\TextProvider;
 use Laravel\Ai\Providers\Concerns\GeneratesEmbeddings;
+use Laravel\Ai\Providers\Concerns\GeneratesImages;
 use Laravel\Ai\Providers\Concerns\GeneratesText;
 use Laravel\Ai\Providers\Concerns\HasEmbeddingGateway;
+use Laravel\Ai\Providers\Concerns\HasImageGateway;
 use Laravel\Ai\Providers\Concerns\HasTextGateway;
 use Laravel\Ai\Providers\Concerns\StreamsText;
 use Laravel\Ai\Providers\Provider;
 
-class BedrockProvider extends Provider implements EmbeddingProvider, TextProvider
+class BedrockProvider extends Provider implements EmbeddingProvider, ImageProvider, TextProvider
 {
     use GeneratesEmbeddings;
+    use GeneratesImages;
     use GeneratesText;
     use HasEmbeddingGateway;
+    use HasImageGateway;
     use HasTextGateway;
     use StreamsText;
 
@@ -62,5 +68,42 @@ class BedrockProvider extends Provider implements EmbeddingProvider, TextProvide
     public function defaultEmbeddingsDimensions(): int
     {
         return (int) ($this->config['models']['embeddings']['dimensions'] ?? 1024);
+    }
+
+    public function imageGateway(): ImageGateway
+    {
+        return $this->imageGateway ??= new BedrockGateway;
+    }
+
+    public function defaultImageModel(): string
+    {
+        return $this->config['models']['image']['default'] ?? 'amazon.nova-canvas-v1:0';
+    }
+
+    /**
+     * Map AI SDK size/quality to Nova Canvas width/height/quality.
+     *
+     * @param  '3:2'|'2:3'|'1:1'|null  $size
+     * @param  'low'|'medium'|'high'|null  $quality
+     */
+    public function defaultImageOptions(?string $size = null, $quality = null): array
+    {
+        [$width, $height] = match ($size) {
+            '1:1' => [1024, 1024],
+            '3:2' => [1536, 1024],
+            '2:3' => [1024, 1536],
+            default => [1024, 1024],
+        };
+
+        return [
+            'width' => $width,
+            'height' => $height,
+            'quality' => match ($quality) {
+                'low' => 'standard',
+                'medium' => 'standard',
+                'high' => 'premium',
+                default => 'standard',
+            },
+        ];
     }
 }

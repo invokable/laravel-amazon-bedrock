@@ -6,11 +6,12 @@
 
 ## Overview
 
-An Amazon Bedrock driver for the [Laravel AI SDK](https://laravel.com/docs/ai-sdk), enabling text generation, streaming, and embeddings via models on AWS Bedrock.
+An Amazon Bedrock driver for the [Laravel AI SDK](https://laravel.com/docs/ai-sdk), enabling text generation, streaming, embeddings, and image generation via models on AWS Bedrock.
 
-- **Features**: Text generation, streaming, embeddings.
+- **Features**: Text generation, streaming, embeddings, image generation.
 - **Supported Text Models**: Anthropic Claude Haiku / Sonnet / Opus 4 and later (default: Claude Sonnet 4.6).
 - **Supported Embedding Models**: Amazon Titan Embeddings V2 (default), Cohere Embed English/Multilingual V3.
+- **Supported Image Models**: Amazon Nova Canvas (default), Stability AI models.
 - **Authentication**: Bedrock API key.
 - **Cache Control**: Ephemeral cache always enabled on system prompts.
 
@@ -63,6 +64,7 @@ The Bedrock API key is obtained from the AWS Management Console.
 | `models.text.smartest` | Smartest text model | `global.anthropic.claude-opus-4-6-v1:0` |
 | `models.embeddings.default` | Default embeddings model | `amazon.titan-embed-text-v2:0` |
 | `models.embeddings.dimensions` | Default embedding dimensions | `1024` |
+| `models.image.default` | Default image model | `amazon.nova-canvas-v1:0` |
 
 ## Usage
 
@@ -226,6 +228,41 @@ it('can generate text', function () {
         return $prompt->contains('Laravel');
     });
 });
+```
+
+## Image Generation
+
+Generate images using Amazon Nova Canvas:
+
+```php
+use Laravel\Ai\Image;
+
+$response = Image::of('A cute steampunk robot')->generate('bedrock');
+
+// Get the first image
+$image = $response->firstImage();
+
+// Store image to disk
+$response->store('images', 's3');
+
+// Render as HTML <img> tag
+echo $response->toHtml('Steampunk robot');
+```
+
+Specify size and quality:
+
+```php
+$response = Image::of('A beautiful landscape')
+    ->size('3:2')           // '1:1', '3:2', or '2:3'
+    ->quality('high')       // 'low', 'medium', or 'high' (high → Nova Canvas "premium")
+    ->generate('bedrock');
+```
+
+Use a custom model:
+
+```php
+$response = Image::of('A sunset')
+    ->generate('bedrock', 'stability.sd3-5-large-v1:0');
 ```
 
 ## Embeddings
