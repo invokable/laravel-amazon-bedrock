@@ -13,6 +13,7 @@ Prismにバグがあったので作ったパッケージだったけどその後
 - [x] Bedrock APIキー以外の認証方法にも対応する。Bedrockしか使えない制限があるのはエンプラなのでAPIキーのみだと使いにくいはず。
 - テキスト生成もAnthropic以外のモデルに対応する。
 - エンドポイントは`bedrock-runtime`とOpenAI互換API用の`bedrock-mantle`がある。
+- Bedrockでも最近[StructuredOutput](https://docs.aws.amazon.com/bedrock/latest/userguide/structured-output.html)に対応したので追加できるはず。
 - 機能追加のタスクがなくなったら既存コードのリファクタリングやテスト追加やLaravel AI SDKのアップデート対応を行う。Laravel AI SDKはまだv0.x、composerはv1.0前では+0.1でもメジャーバージョンアップ扱いなのでまだまだ破壊的変更が入る可能性がある。
 
 GitHub Agentic Workflowsで少しずつ実行。
