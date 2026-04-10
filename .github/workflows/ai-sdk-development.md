@@ -14,6 +14,7 @@ permissions:
 
 engine:
   id: copilot
+  version: "1.0.21"
   model: claude-opus-4.6
 
 checkout:
