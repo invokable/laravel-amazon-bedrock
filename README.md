@@ -18,7 +18,7 @@ An Amazon Bedrock driver for the [Laravel AI SDK](https://laravel.com/docs/ai-sd
 | Reranking          |                                                                                 |
 | Files              |                                                                                 |
 
-- **Authentication**: Bedrock API key. Other authentication methods are being planned.
+- **Authentication**: Bedrock API key, AWS IAM credentials (SigV4), or default AWS credential chain (IAM roles, instance profiles, etc.).
 - **Cache Control**: Ephemeral cache always enabled on system prompts.
 
 ## Requirements
@@ -37,6 +37,8 @@ php artisan vendor:publish --provider="Laravel\Ai\AiServiceProvider"
 
 Add the `bedrock` driver to `config/ai.php`:
 
+### Option 1: Bedrock API Key
+
 ```php
 // config/ai.php
 'default' => 'bedrock',
@@ -52,8 +54,6 @@ Add the `bedrock` driver to `config/ai.php`:
 ],
 ```
 
-Set the required values in `.env`:
-
 ```dotenv
 AWS_BEDROCK_API_KEY=your_api_key
 AWS_DEFAULT_REGION=us-east-1
@@ -61,10 +61,56 @@ AWS_DEFAULT_REGION=us-east-1
 
 The Bedrock API key is obtained from the AWS Management Console.
 
+### Option 2: AWS IAM Credentials (SigV4)
+
+Use AWS access key and secret key with [Signature Version 4](https://docs.aws.amazon.com/general/latest/gr/signature-version-4.html) signing:
+
+```php
+// config/ai.php
+'providers' => [
+    'bedrock' => [
+        'driver' => 'bedrock',
+        'key'    => env('AWS_ACCESS_KEY_ID'),
+        'secret' => env('AWS_SECRET_ACCESS_KEY'),
+        'token'  => env('AWS_SESSION_TOKEN'),  // optional, for temporary credentials
+        'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
+    ],
+],
+```
+
+```dotenv
+AWS_ACCESS_KEY_ID=AKIA...
+AWS_SECRET_ACCESS_KEY=wJalr...
+AWS_SESSION_TOKEN=         # optional, for STS temporary credentials
+AWS_DEFAULT_REGION=us-east-1
+```
+
+### Option 3: Default AWS Credential Chain (IAM Roles)
+
+For EC2 instances, ECS tasks, Lambda functions, or any environment with IAM roles — omit `key` and `secret` to use the [default AWS credential provider chain](https://docs.aws.amazon.com/sdkref/latest/guide/standardized-credentials.html):
+
+```php
+// config/ai.php
+'providers' => [
+    'bedrock' => [
+        'driver' => 'bedrock',
+        'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
+    ],
+],
+```
+
+```dotenv
+AWS_DEFAULT_REGION=us-east-1
+```
+
+The default credential chain automatically resolves credentials from environment variables, shared credentials files (`~/.aws/credentials`), ECS task roles, EC2 instance profiles, and more.
+
 ### Optional config keys
 
 | Key                            | Description                     | Default                                           |
 |--------------------------------|---------------------------------|---------------------------------------------------|
+| `secret`                       | AWS secret access key (SigV4)   | —                                                 |
+| `token`                        | AWS session token (SigV4)       | —                                                 |
 | `timeout`                      | HTTP request timeout in seconds | 30                                                |
 | `max_tokens`                   | Default max tokens per request  | 8096                                              |
 | `models.text.default`          | Default text model              | `global.anthropic.claude-sonnet-4-6:0`            |
