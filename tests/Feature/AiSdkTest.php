@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Ai\AnonymousAgent;
 use Laravel\Ai\Embeddings;
 use Laravel\Ai\Prompts\AgentPrompt;
@@ -31,7 +32,7 @@ describe('Laravel AI SDK', function () {
 
         $response = agent(
             instructions: 'Extract person information from the given text.',
-            schema: fn (\Illuminate\Contracts\JsonSchema\JsonSchema $schema) => [
+            schema: fn (JsonSchema $schema) => [
                 'name' => $schema->string('The person\'s full name'),
                 'age' => $schema->integer('The person\'s age'),
             ],
