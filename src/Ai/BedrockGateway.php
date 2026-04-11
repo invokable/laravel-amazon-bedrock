@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Revolution\Amazon\Bedrock\Ai;
 
-use Closure;
 use Generator;
 use Laravel\Ai\Contracts\Gateway\EmbeddingGateway;
 use Laravel\Ai\Contracts\Gateway\ImageGateway;
 use Laravel\Ai\Contracts\Gateway\TextGateway;
 use Laravel\Ai\Contracts\Providers\TextProvider;
+use Laravel\Ai\Gateway\Concerns\InvokesTools;
 use Laravel\Ai\Gateway\TextGenerationOptions;
 use Laravel\Ai\Responses\TextResponse;
 
@@ -21,11 +21,14 @@ class BedrockGateway implements EmbeddingGateway, ImageGateway, TextGateway
     use Concerns\GeneratesImages;
     use Concerns\HandlesTextStreaming;
     use Concerns\MapsMessages;
+    use Concerns\MapsTools;
     use Concerns\ParsesTextResponses;
+    use InvokesTools;
 
-    protected ?Closure $invokingToolCallback = null;
-
-    protected ?Closure $toolInvokedCallback = null;
+    public function __construct()
+    {
+        $this->initializeToolCallbacks();
+    }
 
     public function generateText(
         TextProvider $provider,
@@ -37,12 +40,12 @@ class BedrockGateway implements EmbeddingGateway, ImageGateway, TextGateway
         ?TextGenerationOptions $options = null,
         ?int $timeout = null,
     ): TextResponse {
-        $body = $this->buildTextRequestBody($provider, $model, $instructions, $messages, $options);
+        $body = $this->buildTextRequestBody($provider, $model, $instructions, $messages, $tools, $schema, $options);
 
         $response = $this->client($provider, $model, $timeout)
             ->post($this->invokeUrl($model), $body);
 
-        return $this->parseTextResponse($response->json(), $provider, $model);
+        return $this->parseTextResponse($response->json(), $provider, $model, $tools, $options, $body, $timeout);
     }
 
     public function streamText(
@@ -56,7 +59,7 @@ class BedrockGateway implements EmbeddingGateway, ImageGateway, TextGateway
         ?TextGenerationOptions $options = null,
         ?int $timeout = null,
     ): Generator {
-        $body = $this->buildTextRequestBody($provider, $model, $instructions, $messages, $options);
+        $body = $this->buildTextRequestBody($provider, $model, $instructions, $messages, $tools, $schema, $options);
 
         $response = $this->client($provider, $model, $timeout)
             ->withOptions(['stream' => true])
@@ -66,15 +69,13 @@ class BedrockGateway implements EmbeddingGateway, ImageGateway, TextGateway
             $invocationId,
             $provider,
             $model,
+            $tools,
+            $options,
             $response->getBody(),
+            $body,
+            0,
+            null,
+            $timeout,
         );
-    }
-
-    public function onToolInvocation(Closure $invoking, Closure $invoked): self
-    {
-        $this->invokingToolCallback = $invoking;
-        $this->toolInvokedCallback = $invoked;
-
-        return $this;
     }
 }

@@ -14,7 +14,9 @@ trait BuildsTextRequests
         string $model,
         ?string $instructions,
         array $messages,
-        ?TextGenerationOptions $options,
+        array $tools = [],
+        ?array $schema = null,
+        ?TextGenerationOptions $options = null,
     ): array {
         $config = $provider->additionalConfiguration();
         $providerOptions = $options?->providerOptions($provider->driver()) ?? [];
@@ -33,6 +35,13 @@ trait BuildsTextRequests
 
         if (filled($instructions)) {
             $body['system'] = $this->buildSystemPrompt($instructions);
+        }
+
+        $mappedTools = filled($tools) ? $this->mapTools($tools) : [];
+
+        if (filled($mappedTools)) {
+            $body['tools'] = $mappedTools;
+            $body['tool_choice'] = ['type' => 'auto'];
         }
 
         if ($options?->temperature !== null) {
