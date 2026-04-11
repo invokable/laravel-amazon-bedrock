@@ -6,12 +6,13 @@
 
 ## Overview
 
-An Amazon Bedrock driver for the [Laravel AI SDK](https://laravel.com/docs/ai-sdk), enabling text generation, streaming, tool use (function calling), embeddings, and image generation via models on AWS Bedrock.
+An Amazon Bedrock driver for the [Laravel AI SDK](https://laravel.com/docs/ai-sdk), enabling text generation, streaming, tool use (function calling), structured output, embeddings, and image generation via models on AWS Bedrock.
 
 | Feature            | Supported Models                                                                |
 |--------------------|---------------------------------------------------------------------------------|
 | Text, Streaming    | Anthropic Claude Haiku / Sonnet / Opus 4 and later (default: Claude Sonnet 4.6) |
 | Tool Use           | Anthropic Claude Haiku / Sonnet / Opus 4 and later                              |
+| Structured Output  | Anthropic Claude Haiku / Sonnet / Opus 4 and later                              |
 | Images             | Amazon Nova Canvas (default), Stability AI models.                              |
 | Audio(TTS)         |                                                                                 |
 | Transcription(STT) |                                                                                 |
@@ -271,6 +272,62 @@ $response = agent(
 ```
 
 Tool calls also work with streaming — the SDK automatically executes tool calls and continues the conversation until the model produces a final text response.
+
+### Structured Output
+
+Get structured (typed) responses from Claude using the `HasStructuredOutput` interface:
+
+```php
+use Illuminate\Contracts\JsonSchema\JsonSchema;
+use Laravel\Ai\Contracts\Agent;
+use Laravel\Ai\Contracts\HasStructuredOutput;
+use Laravel\Ai\Promptable;
+
+class ExtractPerson implements Agent, HasStructuredOutput
+{
+    use Promptable;
+
+    public function instructions(): string
+    {
+        return 'Extract person information from the given text.';
+    }
+
+    public function schema(JsonSchema $schema): array
+    {
+        return [
+            'name' => $schema->string('The person\'s full name'),
+            'age' => $schema->integer('The person\'s age'),
+            'occupation' => $schema->string('The person\'s occupation'),
+        ];
+    }
+}
+
+$response = (new ExtractPerson)->prompt('John is a 30-year-old software engineer.');
+
+// Access structured data via array access
+echo $response['name'];       // "John"
+echo $response['age'];        // 30
+echo $response['occupation']; // "software engineer"
+```
+
+Or with an anonymous structured agent:
+
+```php
+use function Laravel\Ai\structured_agent;
+
+$response = structured_agent(
+    instructions: 'Extract person information from the given text.',
+    schema: fn (JsonSchema $schema) => [
+        'name' => $schema->string('The person\'s full name'),
+        'age' => $schema->integer('The person\'s age'),
+    ],
+)->prompt('Alice is 25 years old.');
+
+echo $response['name']; // "Alice"
+echo $response['age'];  // 25
+```
+
+Under the hood, the driver creates a synthetic tool (`output_structured_data`) that forces Claude to return data matching your schema. This approach is compatible with all Claude models on Bedrock.
 
 ### Provider Options
 

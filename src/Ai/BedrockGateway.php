@@ -45,7 +45,7 @@ class BedrockGateway implements EmbeddingGateway, ImageGateway, TextGateway
         $response = $this->client($provider, $model, $timeout)
             ->post($this->invokeUrl($model), $body);
 
-        return $this->parseTextResponse($response->json(), $provider, $model, $tools, $options, $body, $timeout);
+        return $this->parseTextResponse($response->json(), $provider, $model, filled($schema), $tools, $schema, $options, $body, $timeout);
     }
 
     public function streamText(

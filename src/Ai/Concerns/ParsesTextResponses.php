@@ -15,6 +15,7 @@ use Laravel\Ai\Responses\Data\Step;
 use Laravel\Ai\Responses\Data\ToolCall;
 use Laravel\Ai\Responses\Data\ToolResult;
 use Laravel\Ai\Responses\Data\Usage;
+use Laravel\Ai\Responses\StructuredTextResponse;
 use Laravel\Ai\Responses\TextResponse;
 
 trait ParsesTextResponses
@@ -23,7 +24,9 @@ trait ParsesTextResponses
         array $data,
         Provider $provider,
         string $model,
+        bool $structured = false,
         array $tools = [],
+        ?array $schema = null,
         ?TextGenerationOptions $options = null,
         array $requestBody = [],
         ?int $timeout = null,
@@ -32,7 +35,9 @@ trait ParsesTextResponses
             $data,
             $provider,
             $model,
+            $structured,
             $tools,
+            $schema,
             new Collection,
             new Collection,
             $requestBody,
@@ -45,7 +50,9 @@ trait ParsesTextResponses
         array $data,
         Provider $provider,
         string $model,
+        bool $structured,
         array $tools,
+        ?array $schema,
         Collection $steps,
         Collection $messages,
         array $requestBody,
@@ -61,14 +68,16 @@ trait ParsesTextResponses
         $finishReason = $this->extractFinishReason($data);
         $meta = new Meta($provider->name(), $data['model'] ?? $model);
 
+        $realToolCalls = array_filter($toolCalls, fn (ToolCall $tc) => $tc->name !== 'output_structured_data');
+        $hasStructuredToolCall = count($realToolCalls) < count($toolCalls);
         $toolResults = [];
 
         $shouldContinue = $finishReason === FinishReason::ToolCalls
-            && filled($toolCalls)
+            && filled($realToolCalls)
             && $depth + 1 < ($maxSteps ?? round(count($tools) * 1.5));
 
         if ($shouldContinue) {
-            $toolResults = $this->executeToolCalls($toolCalls, $tools);
+            $toolResults = $this->executeToolCalls($realToolCalls, $tools);
         }
 
         $steps->push(new Step($text, $toolCalls, $toolResults, $finishReason, $usage, $meta));
@@ -82,7 +91,9 @@ trait ParsesTextResponses
                 $data,
                 $provider,
                 $model,
+                $structured,
                 $tools,
+                $schema,
                 $steps,
                 $messages,
                 $requestBody,
@@ -91,6 +102,24 @@ trait ParsesTextResponses
                 $maxSteps,
                 $timeout,
             );
+        }
+
+        if ($structured || $hasStructuredToolCall) {
+            $structuredData = $this->extractStructuredOutput($content);
+
+            if (empty($structuredData) && filled($text)) {
+                $structuredData = json_decode($text, true) ?? [];
+            }
+
+            return (new StructuredTextResponse(
+                $structuredData,
+                json_encode($structuredData) ?: '',
+                $this->combineUsage($steps),
+                $meta,
+            ))->withToolCallsAndResults(
+                toolCalls: $steps->flatMap(fn (Step $s) => $s->toolCalls),
+                toolResults: $steps->flatMap(fn (Step $s) => $s->toolResults),
+            )->withSteps($steps);
         }
 
         return (new TextResponse(
@@ -138,7 +167,9 @@ trait ParsesTextResponses
         array $previousData,
         Provider $provider,
         string $model,
+        bool $structured,
         array $tools,
+        ?array $schema,
         Collection $steps,
         Collection $messages,
         array $requestBody,
@@ -176,7 +207,9 @@ trait ParsesTextResponses
             $data,
             $provider,
             $model,
+            $structured,
             $tools,
+            $schema,
             $steps,
             $messages,
             $requestBody,
@@ -230,6 +263,20 @@ trait ParsesTextResponses
             'max_tokens' => FinishReason::Length,
             default => FinishReason::Unknown,
         };
+    }
+
+    /**
+     * Extract structured output from the synthetic tool call.
+     */
+    protected function extractStructuredOutput(array $content): array
+    {
+        foreach ($content as $block) {
+            if (($block['type'] ?? '') === 'tool_use' && ($block['name'] ?? '') === 'output_structured_data') {
+                return $block['input'] ?? [];
+            }
+        }
+
+        return [];
     }
 
     /**

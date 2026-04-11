@@ -203,14 +203,19 @@ trait HandlesTextStreaming
             }
         }
 
-        if (filled($pendingToolCalls) && $stopReason === 'tool_use') {
+        $realToolCalls = array_filter(
+            $pendingToolCalls,
+            fn (array $tc) => ($tc['name'] ?? '') !== 'output_structured_data',
+        );
+
+        if (filled($realToolCalls) && $stopReason === 'tool_use') {
             yield from $this->handleStreamingToolCalls(
                 $invocationId,
                 $provider,
                 $model,
                 $tools,
                 $options,
-                $pendingToolCalls,
+                $realToolCalls,
                 $responseContent,
                 $requestBody,
                 $depth,
