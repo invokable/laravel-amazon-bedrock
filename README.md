@@ -313,9 +313,9 @@ echo $response['occupation']; // "software engineer"
 Or with an anonymous structured agent:
 
 ```php
-use function Laravel\Ai\structured_agent;
+use function Laravel\Ai\agent;
 
-$response = structured_agent(
+$response = agent(
     instructions: 'Extract person information from the given text.',
     schema: fn (JsonSchema $schema) => [
         'name' => $schema->string('The person\'s full name'),
