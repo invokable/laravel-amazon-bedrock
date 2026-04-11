@@ -10,7 +10,7 @@ An Amazon Bedrock driver for the [Laravel AI SDK](https://laravel.com/docs/ai-sd
 
 | Feature            | Supported Models                                                                |
 |--------------------|---------------------------------------------------------------------------------|
-| Text               | Anthropic Claude Haiku / Sonnet / Opus 4 and later (default: Claude Sonnet 4.6) |
+| Text, Streaming    | Anthropic Claude Haiku / Sonnet / Opus 4 and later (default: Claude Sonnet 4.6) |
 | Images             | Amazon Nova Canvas (default), Stability AI models.                              |
 | Audio(TTS)         |                                                                                 |
 | Transcription(STT) |                                                                                 |
