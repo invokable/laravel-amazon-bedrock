@@ -6,11 +6,12 @@
 
 ## Overview
 
-An Amazon Bedrock driver for the [Laravel AI SDK](https://laravel.com/docs/ai-sdk), enabling text generation, streaming, embeddings, and image generation via models on AWS Bedrock.
+An Amazon Bedrock driver for the [Laravel AI SDK](https://laravel.com/docs/ai-sdk), enabling text generation, streaming, tool use (function calling), embeddings, and image generation via models on AWS Bedrock.
 
 | Feature            | Supported Models                                                                |
 |--------------------|---------------------------------------------------------------------------------|
 | Text, Streaming    | Anthropic Claude Haiku / Sonnet / Opus 4 and later (default: Claude Sonnet 4.6) |
+| Tool Use           | Anthropic Claude Haiku / Sonnet / Opus 4 and later                              |
 | Images             | Amazon Nova Canvas (default), Stability AI models.                              |
 | Audio(TTS)         |                                                                                 |
 | Transcription(STT) |                                                                                 |
@@ -198,6 +199,78 @@ foreach ($stream as $event) {
     }
 }
 ```
+
+### Tool Use (Function Calling)
+
+Define tools that Claude can invoke during generation:
+
+```php
+use Laravel\Ai\Contracts\Tool;
+use Laravel\Ai\Tools\Request;
+use Illuminate\Contracts\JsonSchema\JsonSchema;
+
+class GetWeather implements Tool
+{
+    public function description(): string
+    {
+        return 'Get current weather for a city.';
+    }
+
+    public function schema(JsonSchema $schema): array
+    {
+        return [
+            $schema->string('city', 'The city name.'),
+        ];
+    }
+
+    public function handle(Request $request): string
+    {
+        // Call your weather API here
+        return json_encode(['temperature' => 22, 'condition' => 'sunny']);
+    }
+}
+```
+
+Use the tool with an agent:
+
+```php
+use App\Ai\Agents\BedrockAgent;
+use App\Ai\Tools\GetWeather;
+use Laravel\Ai\Attributes\MaxSteps;
+
+#[MaxSteps(5)]
+class BedrockAgent implements Agent
+{
+    use Promptable;
+
+    public function tools(): array
+    {
+        return [new GetWeather];
+    }
+
+    public function instructions(): string
+    {
+        return 'You are a helpful weather assistant.';
+    }
+}
+
+$response = (new BedrockAgent)->prompt('What is the weather in Tokyo?');
+echo $response->text;
+```
+
+Or with an anonymous agent:
+
+```php
+use function Laravel\Ai\agent;
+
+$response = agent(
+    instructions: 'You are a helpful weather assistant.',
+    tools: [new GetWeather],
+    maxSteps: 5,
+)->prompt('What is the weather in Tokyo?');
+```
+
+Tool calls also work with streaming — the SDK automatically executes tool calls and continues the conversation until the model produces a final text response.
 
 ### Provider Options
 
