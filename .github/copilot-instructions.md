@@ -14,7 +14,7 @@ Prismにバグがあったので作ったパッケージだったけどその後
 - [x] テキスト生成もAnthropic以外のモデルに対応する。APIフォーマットが違うので調査が必要。Bedrockの特徴はオープンウェイトモデルも色々選べることなので差別化要因。
 - エンドポイントは`bedrock-runtime`とOpenAI互換API用の`bedrock-mantle`がある。
 - [x] Bedrockでも最近[StructuredOutput](https://docs.aws.amazon.com/bedrock/latest/userguide/structured-output.html)に対応したので追加できるはず。→AI SDKも使っているツールを使う方法で実装。
-- `workbench/routes/console.php`に開発環境でBedrock APIキーをセットして実際に動かすArtisanコマンドを作る。
+- `workbench/routes/console.php`に開発環境でBedrock APIキーをセットして実際に動かすArtisanコマンドを作る。APIキーで使えないreranking以外は成功したのでここまで正しく実装できている。
 - 機能追加のタスクがなくなったら既存コードのリファクタリングやテスト追加やLaravel AI SDKのアップデート対応を行う。Laravel AI SDKはまだv0.x、composerはv1.0前では+0.1でもメジャーバージョンアップ扱いなのでまだまだ破壊的変更が入る可能性がある。
 
 GitHub Agentic Workflowsで少しずつ実行。
