@@ -66,7 +66,7 @@ AWS_DEFAULT_REGION=us-east-1
 The Bedrock API key is obtained from the AWS Management Console.
 
 > [!WARNING]
-> The Bedrock API key can only be used with the Bedrock Runtime API. It cannot be used with Agents for Amazon Bedrock Runtime, such as for reranking.
+> The Bedrock API key can only be used with the Bedrock Runtime API. It cannot be used with `bedrock-agent-runtime`, such as for reranking.
 
 ### Option 2: AWS IAM Credentials (SigV4)
 
