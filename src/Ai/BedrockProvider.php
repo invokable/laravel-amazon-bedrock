@@ -53,7 +53,7 @@ class BedrockProvider extends Provider implements EmbeddingProvider, ImageProvid
 
     public function defaultTextModel(): string
     {
-        return $this->config['models']['text']['default'] ?? 'global.anthropic.claude-sonnet-4-6:0';
+        return $this->config['models']['text']['default'] ?? 'global.anthropic.claude-sonnet-4-6';
     }
 
     public function cheapestTextModel(): string
@@ -63,7 +63,7 @@ class BedrockProvider extends Provider implements EmbeddingProvider, ImageProvid
 
     public function smartestTextModel(): string
     {
-        return $this->config['models']['text']['smartest'] ?? 'global.anthropic.claude-opus-4-6-v1:0';
+        return $this->config['models']['text']['smartest'] ?? 'global.anthropic.claude-opus-4-6-v1';
     }
 
     public function defaultEmbeddingsModel(): string

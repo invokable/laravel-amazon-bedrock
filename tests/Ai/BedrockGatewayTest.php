@@ -646,7 +646,7 @@ describe('BedrockProvider model defaults', function () {
     test('returns default text model', function () {
         $provider = makeProvider();
 
-        expect($provider->defaultTextModel())->toBe('global.anthropic.claude-sonnet-4-6:0');
+        expect($provider->defaultTextModel())->toBe('global.anthropic.claude-sonnet-4-6');
     });
 
     test('returns cheapest text model', function () {
@@ -658,7 +658,7 @@ describe('BedrockProvider model defaults', function () {
     test('returns smartest text model', function () {
         $provider = makeProvider();
 
-        expect($provider->smartestTextModel())->toBe('global.anthropic.claude-opus-4-6-v1:0');
+        expect($provider->smartestTextModel())->toBe('global.anthropic.claude-opus-4-6-v1');
     });
 
     test('uses custom models from config', function () {
