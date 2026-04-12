@@ -324,8 +324,8 @@ use function Laravel\Ai\agent;
 $response = agent(
     instructions: 'Extract person information from the given text.',
     schema: fn (JsonSchema $schema) => [
-        'name' => $schema->string('The person\'s full name'),
-        'age' => $schema->integer('The person\'s age'),
+        'name' => $schema->string()->description('The person\'s full name'),
+        'age' => $schema->integer()->description('The person\'s age'),
     ],
 )->prompt('Alice is 25 years old.');
 
