@@ -11,7 +11,7 @@ Prismにバグがあったので作ったパッケージだったけどその後
 - [x] Laravel AI SDK特化パッケージへの移行はひとまず完了。レガシーコードは全て削除済み。引き続きテキスト生成以外の機能も実装していく。
 - Anthropic以外のモデルも使ってテキスト生成以外のImages、TTS、STT、Embeddings、Reranking、Filesも可能なら対応する。難しい機能は対応せずREADMEの機能表に非対応と記載する。Laravel AI SDK公式でも全部に対応しているプロバイダーはない。
 - [x] Bedrock APIキー以外の認証方法にも対応する。Bedrockしか使えない制限があるのはエンプラなのでAPIキーのみだと使いにくいはず。
-- テキスト生成もAnthropic以外のモデルに対応する。APIフォーマットが違うので調査が必要。Bedrockの特徴はオープンウェイトモデルも色々選べることなので差別化要因。
+- [x] テキスト生成もAnthropic以外のモデルに対応する。APIフォーマットが違うので調査が必要。Bedrockの特徴はオープンウェイトモデルも色々選べることなので差別化要因。
 - エンドポイントは`bedrock-runtime`とOpenAI互換API用の`bedrock-mantle`がある。
 - [x] Bedrockでも最近[StructuredOutput](https://docs.aws.amazon.com/bedrock/latest/userguide/structured-output.html)に対応したので追加できるはず。→AI SDKも使っているツールを使う方法で実装。
 - 機能追加のタスクがなくなったら既存コードのリファクタリングやテスト追加やLaravel AI SDKのアップデート対応を行う。Laravel AI SDKはまだv0.x、composerはv1.0前では+0.1でもメジャーバージョンアップ扱いなのでまだまだ破壊的変更が入る可能性がある。
