@@ -8,20 +8,21 @@
 
 An Amazon Bedrock driver for the [Laravel AI SDK](https://laravel.com/docs/ai-sdk), enabling text generation, streaming, tool use (function calling), structured output, embeddings, and image generation via models on AWS Bedrock.
 
-| Feature            | Supported Models                                                                |
-|--------------------|---------------------------------------------------------------------------------|
-| Text, Streaming    | Anthropic Claude Haiku / Sonnet / Opus 4 and later (default: Claude Sonnet 4.6) |
-| Tool Use           | Anthropic Claude Haiku / Sonnet / Opus 4 and later                              |
-| Structured Output  | Anthropic Claude Haiku / Sonnet / Opus 4 and later                              |
-| Images             | Amazon Nova Canvas (default), Stability AI models.                              |
-| Audio(TTS)         |                                                                                 |
-| Transcription(STT) |                                                                                 |
-| Embeddings         | Amazon Titan Embeddings V2 (default), Cohere Embed English/Multilingual V3.     |
-| Reranking          |                                                                                 |
-| Files              |                                                                                 |
+| Feature            | Supported Models                                                                                            |
+|--------------------|-------------------------------------------------------------------------------------------------------------|
+| Text, Streaming    | Anthropic Claude, Amazon Nova, Meta Llama, Mistral, Cohere Command R, DeepSeek, AI21 Jamba (via Converse API) |
+| Tool Use           | Anthropic Claude, Amazon Nova, Meta Llama 3.1+, Mistral Large, Cohere Command R                            |
+| Structured Output  | Anthropic Claude, Amazon Nova, Meta Llama 3.1+, Mistral Large, Cohere Command R                            |
+| Images             | Amazon Nova Canvas (default), Stability AI models.                                                          |
+| Audio(TTS)         |                                                                                                             |
+| Transcription(STT) |                                                                                                             |
+| Embeddings         | Amazon Titan Embeddings V2 (default), Cohere Embed English/Multilingual V3.                                 |
+| Reranking          |                                                                                                             |
+| Files              |                                                                                                             |
 
 - **Authentication**: Bedrock API key, AWS IAM credentials (SigV4), or default AWS credential chain (IAM roles, instance profiles, etc.).
-- **Cache Control**: Ephemeral cache always enabled on system prompts.
+- **Cache Control**: Ephemeral cache always enabled on system prompts (Anthropic models).
+- **Multi-model**: Anthropic Claude uses the native Anthropic Messages API; all other models use the [Bedrock Converse API](https://docs.aws.amazon.com/bedrock/latest/userguide/conversation-inference.html) for a unified interface.
 
 ## Requirements
 
@@ -327,7 +328,51 @@ echo $response['name']; // "Alice"
 echo $response['age'];  // 25
 ```
 
-Under the hood, the driver creates a synthetic tool (`output_structured_data`) that forces Claude to return data matching your schema. This approach is compatible with all Claude models on Bedrock.
+Under the hood, the driver creates a synthetic tool (`output_structured_data`) that forces Claude to return data matching your schema. This approach is compatible with all Claude models on Bedrock and non-Anthropic models via the Converse API.
+
+### Non-Anthropic Models (Converse API)
+
+The driver automatically detects the model family and routes non-Anthropic models through the [Bedrock Converse API](https://docs.aws.amazon.com/bedrock/latest/userguide/conversation-inference.html). This provides access to Amazon Nova, Meta Llama, Mistral, Cohere, DeepSeek, and other models available on Bedrock — all through the same Laravel AI SDK interface.
+
+```php
+use function Laravel\Ai\agent;
+
+// Amazon Nova
+$response = agent(
+    instructions: 'You are a helpful assistant.',
+    model: 'amazon.nova-pro-v1:0',
+)->prompt('Tell me about AWS.');
+
+// Meta Llama
+$response = agent(
+    instructions: 'You are a helpful assistant.',
+    model: 'meta.llama3-1-70b-instruct-v1:0',
+)->prompt('Explain quantum computing.');
+
+// Mistral
+$response = agent(
+    instructions: 'You are a helpful assistant.',
+    model: 'mistral.mistral-large-2402-v1:0',
+)->prompt('Write a haiku about coding.');
+
+// Cohere Command R+
+$response = agent(
+    instructions: 'You are a helpful assistant.',
+    model: 'cohere.command-r-plus-v1:0',
+)->prompt('Summarize this text.');
+
+// DeepSeek R1
+$response = agent(
+    instructions: 'You are a helpful assistant.',
+    model: 'deepseek.r1-v1:0',
+)->prompt('Solve this math problem.');
+```
+
+Streaming, tool use, and structured output work with Converse API models that support these features. See the [Bedrock supported models table](https://docs.aws.amazon.com/bedrock/latest/userguide/conversation-inference-supported-models-features.html) for feature availability per model.
+
+**API routing:**
+- Anthropic Claude models (`anthropic.*`) → Anthropic Messages API (`/model/{id}/invoke`)
+- All other models → Converse API (`/model/{id}/converse`)
 
 ### Provider Options
 
@@ -363,11 +408,12 @@ class BedrockAgent implements Agent, HasProviderOptions
 
 Supported provider options:
 
-| Option              | Description                        | Default              |
-|---------------------|------------------------------------|----------------------|
-| `anthropic_version` | Anthropic API version for Bedrock  | `bedrock-2023-05-31` |
-| `top_k`             | Top-K sampling parameter           | —                    |
-| `top_p`             | Top-P (nucleus) sampling parameter | —                    |
+| Option                          | Description                                | Default              |
+|---------------------------------|--------------------------------------------|----------------------|
+| `anthropic_version`             | Anthropic API version (Claude models only) | `bedrock-2023-05-31` |
+| `top_k`                         | Top-K sampling parameter                   | —                    |
+| `top_p`                         | Top-P (nucleus) sampling parameter         | —                    |
+| `additionalModelRequestFields` | Converse API additional model parameters   | —                    |
 
 ### Agent Configuration
 
