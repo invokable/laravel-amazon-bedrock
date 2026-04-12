@@ -8,8 +8,8 @@ use Laravel\Ai\Embeddings;
 use Laravel\Ai\Image;
 use Laravel\Ai\Reranking;
 use Laravel\Ai\Streaming\Events\TextDelta;
-use Laravel\Ai\Tools\Request;
 use Revolution\Amazon\Bedrock\Bedrock;
+use Workbench\App\Ai\Tools\TimezoneTool;
 
 use function Laravel\Ai\agent;
 
@@ -90,31 +90,9 @@ Artisan::command('bedrock:converse-stream', function () {
 // vendor/bin/testbench bedrock:tools
 // -----------------------------------------------------------------------
 Artisan::command('bedrock:tools', function () {
-    $tool = new class implements Tool
-    {
-        public function description(): string
-        {
-            return 'Get the current time for a given timezone.';
-        }
-
-        public function schema(JsonSchema $schema): array
-        {
-            return [
-                $schema->string('timezone', 'A valid PHP timezone identifier, e.g. Asia/Tokyo.'),
-            ];
-        }
-
-        public function handle(Request $request): string
-        {
-            $tz = $request->string('timezone', 'UTC');
-
-            return now()->setTimezone($tz)->toDateTimeString();
-        }
-    };
-
     $response = agent(
         instructions: 'You are a helpful assistant.',
-        tools: [$tool],
+        tools: [new TimezoneTool],
     )->prompt('What time is it now in Tokyo?', provider: Bedrock::KEY);
 
     $this->info($response->text);
@@ -128,9 +106,9 @@ Artisan::command('bedrock:structured', function () {
     $response = agent(
         instructions: 'Extract structured information from the text.',
         schema: fn (JsonSchema $schema) => [
-            'name' => $schema->string("The person's full name"),
-            'age' => $schema->integer("The person's age"),
-            'occupation' => $schema->string("The person's occupation"),
+            'name' => $schema->string()->description('The person\'s full name'),
+            'age' => $schema->integer()->description('The person\'s age'),
+            'occupation' => $schema->string()->description('The person\'s occupation'),
         ],
     )->prompt(
         'Taylor Otwell is a 38-year-old software developer who created the Laravel framework.',

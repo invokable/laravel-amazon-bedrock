@@ -226,7 +226,7 @@ class GetWeather implements Tool
     public function schema(JsonSchema $schema): array
     {
         return [
-            $schema->string('city', 'The city name.'),
+            'city' => $schema->string()->required()->description('The city name.'),
         ];
     }
 
@@ -301,9 +301,9 @@ class ExtractPerson implements Agent, HasStructuredOutput
     public function schema(JsonSchema $schema): array
     {
         return [
-            'name' => $schema->string('The person\'s full name'),
-            'age' => $schema->integer('The person\'s age'),
-            'occupation' => $schema->string('The person\'s occupation'),
+            'name' => $schema->string()->description('The person\'s full name'),
+            'age' => $schema->integer()->description('The person\'s age'),
+            'occupation' => $schema->string()->description('The person\'s occupation'),
         ];
     }
 }
