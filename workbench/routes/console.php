@@ -175,7 +175,7 @@ Artisan::command('bedrock:image', function () {
 // Reranking (Cohere Rerank)
 // vendor/bin/testbench bedrock:reranking
 // -----------------------------------------------------------------------
-//Artisan::command('bedrock:reranking', function () {
+// Artisan::command('bedrock:reranking', function () {
 //    $documents = [
 //        'Laravel is a PHP web application framework.',
 //        'Python is a general-purpose programming language.',
@@ -191,4 +191,4 @@ Artisan::command('bedrock:image', function () {
 //    foreach ($response->results as $result) {
 //        $this->line(sprintf('[%.4f] %s', $result->score, $result->document));
 //    }
-//})->purpose('Rerank documents with Cohere Rerank 3.5');
+// })->purpose('Rerank documents with Cohere Rerank 3.5');
