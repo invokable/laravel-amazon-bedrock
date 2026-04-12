@@ -13,6 +13,8 @@ use function Laravel\Ai\agent;
 //     $this->comment(Inspiring::quote());
 // })->purpose('Display an inspiring quote');
 
+// 開発環境でのテスト用コマンド。
+// Bedrock APIキーで使えない機能は除く。
 // configはworkbench内の.envとWorkbenchServiceProviderでセットしている。
 
 // vendor/bin/testbench bedrock:ai-sdk
