@@ -9,6 +9,13 @@
             "tools": [
                 "*"
             ]
+        },
+        "github-agentic-workflows": {
+            "command": "gh",
+            "args": [
+                "aw",
+                "mcp-server"
+            ]
         }
     }
 }
