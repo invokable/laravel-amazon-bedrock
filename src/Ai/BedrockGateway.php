@@ -15,13 +15,17 @@ use Laravel\Ai\Responses\TextResponse;
 
 class BedrockGateway implements EmbeddingGateway, ImageGateway, TextGateway
 {
+    use Concerns\BuildsConverseRequests;
     use Concerns\BuildsTextRequests;
     use Concerns\CreatesBedrockClient;
+    use Concerns\DetectsModelApi;
     use Concerns\GeneratesEmbeddings;
     use Concerns\GeneratesImages;
+    use Concerns\HandlesConverseStreaming;
     use Concerns\HandlesTextStreaming;
     use Concerns\MapsMessages;
     use Concerns\MapsTools;
+    use Concerns\ParsesConverseResponses;
     use Concerns\ParsesTextResponses;
     use InvokesTools;
 
@@ -40,6 +44,10 @@ class BedrockGateway implements EmbeddingGateway, ImageGateway, TextGateway
         ?TextGenerationOptions $options = null,
         ?int $timeout = null,
     ): TextResponse {
+        if ($this->useConverseApi($model)) {
+            return $this->generateConverseText($provider, $model, $instructions, $messages, $tools, $schema, $options, $timeout);
+        }
+
         $body = $this->buildTextRequestBody($provider, $model, $instructions, $messages, $tools, $schema, $options);
 
         $response = $this->client($provider, $model, $timeout)
@@ -59,6 +67,12 @@ class BedrockGateway implements EmbeddingGateway, ImageGateway, TextGateway
         ?TextGenerationOptions $options = null,
         ?int $timeout = null,
     ): Generator {
+        if ($this->useConverseApi($model)) {
+            yield from $this->streamConverseText($invocationId, $provider, $model, $instructions, $messages, $tools, $schema, $options, $timeout);
+
+            return;
+        }
+
         $body = $this->buildTextRequestBody($provider, $model, $instructions, $messages, $tools, $schema, $options);
 
         $response = $this->client($provider, $model, $timeout)
@@ -66,6 +80,61 @@ class BedrockGateway implements EmbeddingGateway, ImageGateway, TextGateway
             ->post($this->streamUrl($model), $body);
 
         yield from $this->processTextStream(
+            $invocationId,
+            $provider,
+            $model,
+            $tools,
+            $options,
+            $response->getBody(),
+            $body,
+            0,
+            null,
+            $timeout,
+        );
+    }
+
+    /**
+     * Generate text using the Converse API for non-Anthropic models.
+     */
+    protected function generateConverseText(
+        TextProvider $provider,
+        string $model,
+        ?string $instructions,
+        array $messages,
+        array $tools,
+        ?array $schema,
+        ?TextGenerationOptions $options,
+        ?int $timeout,
+    ): TextResponse {
+        $body = $this->buildConverseRequestBody($provider, $model, $instructions, $messages, $tools, $schema, $options);
+
+        $response = $this->client($provider, $model, $timeout)
+            ->post($this->converseUrl($model), $body);
+
+        return $this->parseConverseResponse($response->json(), $provider, $model, filled($schema), $tools, $schema, $options, $body, $timeout);
+    }
+
+    /**
+     * Stream text using the Converse API for non-Anthropic models.
+     */
+    protected function streamConverseText(
+        string $invocationId,
+        TextProvider $provider,
+        string $model,
+        ?string $instructions,
+        array $messages,
+        array $tools,
+        ?array $schema,
+        ?TextGenerationOptions $options,
+        ?int $timeout,
+    ): Generator {
+        $body = $this->buildConverseRequestBody($provider, $model, $instructions, $messages, $tools, $schema, $options);
+
+        $response = $this->client($provider, $model, $timeout)
+            ->withOptions(['stream' => true])
+            ->post($this->converseStreamUrl($model), $body);
+
+        yield from $this->processConverseStream(
             $invocationId,
             $provider,
             $model,
