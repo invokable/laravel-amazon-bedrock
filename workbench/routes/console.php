@@ -151,7 +151,7 @@ Artisan::command('bedrock:embeddings', function () {
 
     $this->info('Number of embeddings: '.$response->count());
     $this->info('Dimensions of first vector: '.count($response->first()));
-    $this->info('Total input tokens: '.$response->usage->inputTokens);
+    $this->info('Total input tokens: '.$response->tokens);
 })->purpose('Generate embeddings with Amazon Titan Embeddings V2');
 
 // -----------------------------------------------------------------------
@@ -163,32 +163,32 @@ Artisan::command('bedrock:image', function () {
         ->square()
         ->generate(provider: Bedrock::KEY);
 
-    $image = $response->first();
+    $image = $response->firstImage();
     $path = sys_get_temp_dir().'/bedrock-image-'.time().'.png';
-    file_put_contents($path, base64_decode($image->data));
+    file_put_contents($path, $image->content());
 
     $this->info('Image saved to: '.$path);
-    $this->info('MIME type: '.$image->mimeType);
+    $this->info('MIME type: '.$image->mime);
 })->purpose('Image generation with Amazon Nova Canvas');
 
 // -----------------------------------------------------------------------
 // Reranking (Cohere Rerank)
 // vendor/bin/testbench bedrock:reranking
 // -----------------------------------------------------------------------
-Artisan::command('bedrock:reranking', function () {
-    $documents = [
-        'Laravel is a PHP web application framework.',
-        'Python is a general-purpose programming language.',
-        'Eloquent ORM makes database interactions easy in Laravel.',
-        'React is a JavaScript library for building user interfaces.',
-        'Laravel Artisan is a command-line interface included with Laravel.',
-    ];
-
-    $response = Reranking::of($documents)
-        ->limit(3)
-        ->rerank('What is Laravel?', provider: Bedrock::KEY);
-
-    foreach ($response->results as $result) {
-        $this->line(sprintf('[%.4f] %s', $result->score, $result->document));
-    }
-})->purpose('Rerank documents with Cohere Rerank 3.5');
+//Artisan::command('bedrock:reranking', function () {
+//    $documents = [
+//        'Laravel is a PHP web application framework.',
+//        'Python is a general-purpose programming language.',
+//        'Eloquent ORM makes database interactions easy in Laravel.',
+//        'React is a JavaScript library for building user interfaces.',
+//        'Laravel Artisan is a command-line interface included with Laravel.',
+//    ];
+//
+//    $response = Reranking::of($documents)
+//        ->limit(3)
+//        ->rerank('What is Laravel?', provider: Bedrock::KEY);
+//
+//    foreach ($response->results as $result) {
+//        $this->line(sprintf('[%.4f] %s', $result->score, $result->document));
+//    }
+//})->purpose('Rerank documents with Cohere Rerank 3.5');
