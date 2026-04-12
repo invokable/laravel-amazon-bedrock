@@ -7,6 +7,9 @@ use Laravel\Ai\AnonymousAgent;
 use Laravel\Ai\Embeddings;
 use Laravel\Ai\Prompts\AgentPrompt;
 use Laravel\Ai\Prompts\EmbeddingsPrompt;
+use Laravel\Ai\Prompts\RerankingPrompt;
+use Laravel\Ai\Reranking;
+use Laravel\Ai\Responses\RerankingResponse;
 use Laravel\Ai\StructuredAnonymousAgent;
 use Revolution\Amazon\Bedrock\Bedrock;
 
@@ -61,6 +64,22 @@ describe('Laravel AI SDK', function () {
 
         Embeddings::assertGenerated(function (EmbeddingsPrompt $prompt) {
             return $prompt->contains('Laravel') && $prompt->dimensions === 1536;
+        });
+    });
+
+    test('Reranking', function () {
+        Reranking::fake();
+
+        $response = Reranking::of([
+            'Laravel is a PHP framework.',
+            'Python is a programming language.',
+        ])->rerank(query: 'What is Laravel?', provider: Bedrock::KEY);
+
+        expect($response)->toBeInstanceOf(RerankingResponse::class);
+        expect($response)->toHaveCount(2);
+
+        Reranking::assertReranked(function (RerankingPrompt $prompt) {
+            return $prompt->query === 'What is Laravel?';
         });
     });
 });

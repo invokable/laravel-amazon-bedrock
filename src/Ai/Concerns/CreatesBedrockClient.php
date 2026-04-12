@@ -80,6 +80,25 @@ trait CreatesBedrockClient
         return $this->withSigV4Signing($client, $credentials, $region);
     }
 
+    /**
+     * Create an HTTP client for the Bedrock Agent Runtime service.
+     *
+     * Used for features like reranking that use the bedrock-agent-runtime endpoint
+     * instead of the bedrock-runtime endpoint.
+     */
+    protected function agentRuntimeClient(Provider $provider, ?int $timeout = null): PendingRequest
+    {
+        $config = $provider->additionalConfiguration();
+        $region = $config['region'] ?? 'us-east-1';
+
+        $client = Http::baseUrl("https://bedrock-agent-runtime.{$region}.amazonaws.com")
+            ->acceptJson()
+            ->timeout($timeout ?? (int) ($config['timeout'] ?? 30))
+            ->throw();
+
+        return $this->authenticate($client, $provider, $region);
+    }
+
     protected function invokeUrl(string $model): string
     {
         return "model/{$model}/invoke";

@@ -7,13 +7,14 @@ namespace Revolution\Amazon\Bedrock\Ai;
 use Generator;
 use Laravel\Ai\Contracts\Gateway\EmbeddingGateway;
 use Laravel\Ai\Contracts\Gateway\ImageGateway;
+use Laravel\Ai\Contracts\Gateway\RerankingGateway;
 use Laravel\Ai\Contracts\Gateway\TextGateway;
 use Laravel\Ai\Contracts\Providers\TextProvider;
 use Laravel\Ai\Gateway\Concerns\InvokesTools;
 use Laravel\Ai\Gateway\TextGenerationOptions;
 use Laravel\Ai\Responses\TextResponse;
 
-class BedrockGateway implements EmbeddingGateway, ImageGateway, TextGateway
+class BedrockGateway implements EmbeddingGateway, ImageGateway, RerankingGateway, TextGateway
 {
     use Concerns\BuildsConverseRequests;
     use Concerns\BuildsTextRequests;
@@ -27,6 +28,7 @@ class BedrockGateway implements EmbeddingGateway, ImageGateway, TextGateway
     use Concerns\MapsTools;
     use Concerns\ParsesConverseResponses;
     use Concerns\ParsesTextResponses;
+    use Concerns\Reranks;
     use InvokesTools;
 
     public function __construct()
