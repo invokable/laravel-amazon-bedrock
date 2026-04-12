@@ -17,7 +17,7 @@ An Amazon Bedrock driver for the [Laravel AI SDK](https://laravel.com/docs/ai-sd
 | Audio(TTS)         |                                                                                                             |
 | Transcription(STT) |                                                                                                             |
 | Embeddings         | Amazon Titan Embeddings V2 (default), Cohere Embed English/Multilingual V3.                                 |
-| Reranking          |                                                                                                             |
+| Reranking          | Cohere Rerank 3.5, Amazon Rerank 1.0                                                        |
 | Files              |                                                                                                             |
 
 - **Authentication**: Bedrock API key, AWS IAM credentials (SigV4), or default AWS credential chain (IAM roles, instance profiles, etc.).
@@ -47,6 +47,7 @@ Add the `bedrock` driver to `config/ai.php`:
 'default' => 'bedrock',
 'default_for_images' => 'bedrock',
 'default_for_embeddings' => 'bedrock',
+'default_for_reranking' => 'bedrock',
 
 'providers' => [
     'bedrock' => [
@@ -122,6 +123,7 @@ The default credential chain automatically resolves credentials from environment
 | `models.embeddings.default`    | Default embeddings model        | `amazon.titan-embed-text-v2:0`                    |
 | `models.embeddings.dimensions` | Default embedding dimensions    | `1024`                                            |
 | `models.image.default`         | Default image model             | `amazon.nova-canvas-v1:0`                         |
+| `models.reranking.default`     | Default reranking model         | `cohere.rerank-v3-5:0`                            |
 
 ## Usage
 
@@ -528,6 +530,43 @@ $response = Embeddings::for(['Hello world'])
     ->dimensions(1024)
     ->generate(provider: 'bedrock', model: 'amazon.titan-embed-text-v2:0');
 ```
+
+## Reranking
+
+Rerank documents by relevance to a query using Cohere Rerank 3.5 or Amazon Rerank 1.0:
+
+```php
+use Laravel\Ai\Reranking;
+
+$response = Reranking::of([
+    'Laravel is a PHP web framework.',
+    'Python is a programming language.',
+    'Laravel provides elegant syntax for web development.',
+])->rerank(query: 'What is Laravel?', provider: 'bedrock');
+
+// Get the top-ranked document
+echo $response->first()->document; // "Laravel is a PHP web framework."
+echo $response->first()->score;    // 0.95
+
+// Get all documents in reranked order
+foreach ($response as $result) {
+    echo "{$result->index}: {$result->document} ({$result->score})\n";
+}
+
+// Limit the number of results
+$response = Reranking::of([...])
+    ->limit(2)
+    ->rerank(query: 'What is Laravel?', provider: 'bedrock');
+```
+
+Use a custom model:
+
+```php
+$response = Reranking::of([...])
+    ->rerank(query: 'Search query', provider: 'bedrock', model: 'amazon.rerank-v1:0');
+```
+
+**Note:** The reranking API uses the `bedrock-agent-runtime` endpoint (not `bedrock-runtime`). Amazon Rerank 1.0 is not available in `us-east-1` — use Cohere Rerank 3.5 in that region.
 
 ## License
 
