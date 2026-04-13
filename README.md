@@ -444,29 +444,6 @@ class BedrockAgent implements Agent
 }
 ```
 
-## Testing
-
-Use `AnonymousAgent::fake()` to test agent interactions:
-
-```php
-use Laravel\Ai\AnonymousAgent;
-use Laravel\Ai\Prompts\AgentPrompt;
-
-use function Laravel\Ai\agent;
-
-it('can generate text', function () {
-    AnonymousAgent::fake();
-
-    $response = agent(
-        instructions: 'You are an expert at software development.',
-    )->prompt('Tell me about Laravel');
-
-    AnonymousAgent::assertPrompted(function (AgentPrompt $prompt) {
-        return $prompt->contains('Laravel');
-    });
-});
-```
-
 ## Image Generation
 
 Generate images using Amazon Nova Canvas:
@@ -626,6 +603,31 @@ $response = Reranking::of([...])
 ```
 
 **Note:** The reranking API uses the `bedrock-agent-runtime` endpoint (not `bedrock-runtime`). Amazon Rerank 1.0 is not available in `us-east-1` — use Cohere Rerank 3.5 in that region.
+
+## Testing
+
+Supports the standard testing features of the AI SDK.
+
+Although not mentioned in the official documentation, when using the `agent()` helper, you can mock it with `AnonymousAgent::fake()` or `StructuredAnonymousAgent::fake()`.
+
+```php
+use Laravel\Ai\AnonymousAgent;
+use Laravel\Ai\Prompts\AgentPrompt;
+
+use function Laravel\Ai\agent;
+
+it('can generate text', function () {
+    AnonymousAgent::fake();
+
+    $response = agent(
+        instructions: 'You are an expert at software development.',
+    )->prompt('Tell me about Laravel');
+
+    AnonymousAgent::assertPrompted(function (AgentPrompt $prompt) {
+        return $prompt->contains('Laravel');
+    });
+});
+```
 
 ## License
 
