@@ -130,7 +130,7 @@ The default credential chain automatically resolves credentials from environment
 | `models.audio.default`         | Default audio (TTS) engine      | `generative`                                      |
 | `models.reranking.default`     | Default reranking model         | `cohere.rerank-v3-5:0`                            |
 
-## Usage
+## Text Generation
 
 ### Agent Class
 
