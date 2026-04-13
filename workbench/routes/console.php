@@ -137,7 +137,7 @@ Artisan::command('bedrock:embeddings', function () {
 // vendor/bin/testbench bedrock:image
 // -----------------------------------------------------------------------
 Artisan::command('bedrock:image', function () {
-    $response = Image::of('A cute robot reading a book in a cozy library')
+    $response = Image::of('A cute steampunk robot reading a book in a cozy library')
         ->square()
         ->generate(provider: Bedrock::KEY);
 

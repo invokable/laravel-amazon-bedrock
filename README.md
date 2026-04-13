@@ -463,7 +463,7 @@ $response->store('images', 's3');
 echo $response->toHtml('Steampunk robot');
 ```
 
-<img src="art/bedrock-image-1775997614.png" alt="A cute robot reading a book in a cozy library" height="300" width="300"/>
+<img src="art/bedrock-image-1776081529.png" alt="A cute steampunk robot reading a book in a cozy library" height="300" width="300"/>
 
 Specify size and quality:
 
