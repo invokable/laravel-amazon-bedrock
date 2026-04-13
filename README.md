@@ -6,7 +6,7 @@
 
 ## Overview
 
-An Amazon Bedrock driver for the [Laravel AI SDK](https://laravel.com/docs/ai-sdk), enabling text generation, streaming, tool use (function calling), structured output, embeddings, and image generation via models on AWS Bedrock.
+An Amazon Bedrock driver for the [Laravel AI SDK](https://laravel.com/docs/ai-sdk), enabling text generation, streaming, tool use (function calling), structured output, embeddings, image generation, audio (TTS), and reranking via models on AWS Bedrock.
 
 | Feature            | Supported Models                                                                                              |
 |--------------------|---------------------------------------------------------------------------------------------------------------|
@@ -14,7 +14,7 @@ An Amazon Bedrock driver for the [Laravel AI SDK](https://laravel.com/docs/ai-sd
 | Tool Use           | Anthropic Claude, Amazon Nova, Meta Llama 3.1+, Mistral Large, Cohere Command R                               |
 | Structured Output  | Anthropic Claude, Amazon Nova, Meta Llama 3.1+, Mistral Large, Cohere Command R                               |
 | Images             | Amazon Nova Canvas (default), Stability AI models.                                                            |
-| Audio(TTS)         |                                                                                                               |
+| Audio(TTS)         | Amazon Polly (generative, neural, long-form, standard engines)                                                |
 | Transcription(STT) |                                                                                                               |
 | Embeddings         | Amazon Titan Embeddings V2 (default), Cohere Embed English/Multilingual V3.                                   |
 | Reranking          | Cohere Rerank 3.5, Amazon Rerank 1.0                                                                          |
@@ -46,6 +46,7 @@ Add the `bedrock` driver to `config/ai.php`:
 // config/ai.php
 'default' => 'bedrock',
 'default_for_images' => 'bedrock',
+'default_for_audio' => 'bedrock',
 'default_for_embeddings' => 'bedrock',
 'default_for_reranking' => 'bedrock',
 
@@ -66,7 +67,7 @@ AWS_DEFAULT_REGION=us-east-1
 The Bedrock API key is obtained from the AWS Management Console.
 
 > [!WARNING]
-> The Bedrock API key can only be used with the Bedrock Runtime API. It cannot be used with `bedrock-agent-runtime`, such as for reranking.
+> The Bedrock API key can only be used with the Bedrock Runtime API. It cannot be used with `bedrock-agent-runtime` (reranking) or Amazon Polly (audio/TTS). Use SigV4 or the default AWS credential chain for these features.
 
 ### Option 2: AWS IAM Credentials (SigV4)
 
@@ -126,6 +127,7 @@ The default credential chain automatically resolves credentials from environment
 | `models.embeddings.default`    | Default embeddings model        | `amazon.titan-embed-text-v2:0`                    |
 | `models.embeddings.dimensions` | Default embedding dimensions    | `1024`                                            |
 | `models.image.default`         | Default image model             | `amazon.nova-canvas-v1:0`                         |
+| `models.audio.default`         | Default audio (TTS) engine      | `generative`                                      |
 | `models.reranking.default`     | Default reranking model         | `cohere.rerank-v3-5:0`                            |
 
 ## Usage
@@ -499,6 +501,60 @@ Use a custom model:
 $response = Image::of('A sunset')
     ->generate(provider: 'bedrock', model: 'stability.sd3-5-large-v1:0');
 ```
+
+## Audio (TTS)
+
+Generate speech audio from text using [Amazon Polly](https://docs.aws.amazon.com/polly/latest/dg/what-is.html):
+
+```php
+use Laravel\Ai\Audio;
+
+$response = Audio::of('I love coding with Laravel.')->generate(provider: 'bedrock');
+
+$rawContent = (string) $response;
+```
+
+Use male or female voice:
+
+```php
+$response = Audio::of('I love coding with Laravel.')
+    ->female()
+    ->generate(provider: 'bedrock');
+
+$response = Audio::of('I love coding with Laravel.')
+    ->male()
+    ->generate(provider: 'bedrock');
+```
+
+Use a specific [Polly voice](https://docs.aws.amazon.com/polly/latest/dg/voicelist.html):
+
+```php
+$response = Audio::of('I love coding with Laravel.')
+    ->voice('Joanna')
+    ->generate(provider: 'bedrock');
+```
+
+Store the generated audio:
+
+```php
+$response = Audio::of('I love coding with Laravel.')->generate(provider: 'bedrock');
+
+$path = $response->store();
+$path = $response->storeAs('audio.mp3');
+```
+
+Specify a different engine (model):
+
+```php
+// Available engines: generative (default), neural, long-form, standard
+$response = Audio::of('I love coding with Laravel.')
+    ->generate(provider: 'bedrock', model: 'neural');
+```
+
+**Default voices:** `default-female` → Ruth, `default-male` → Matthew (both support the generative engine).
+
+> [!WARNING]
+> Amazon Polly is a separate AWS service from Bedrock. The Bedrock API key (bearer token) cannot be used with Polly. Use AWS IAM credentials (SigV4) or the default AWS credential chain instead.
 
 ## Embeddings
 

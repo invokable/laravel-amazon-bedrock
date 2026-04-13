@@ -5,17 +5,21 @@ declare(strict_types=1);
 namespace Revolution\Amazon\Bedrock\Ai;
 
 use Illuminate\Contracts\Events\Dispatcher;
+use Laravel\Ai\Contracts\Gateway\AudioGateway;
 use Laravel\Ai\Contracts\Gateway\EmbeddingGateway;
 use Laravel\Ai\Contracts\Gateway\ImageGateway;
 use Laravel\Ai\Contracts\Gateway\RerankingGateway;
 use Laravel\Ai\Contracts\Gateway\TextGateway;
+use Laravel\Ai\Contracts\Providers\AudioProvider;
 use Laravel\Ai\Contracts\Providers\EmbeddingProvider;
 use Laravel\Ai\Contracts\Providers\ImageProvider;
 use Laravel\Ai\Contracts\Providers\RerankingProvider;
 use Laravel\Ai\Contracts\Providers\TextProvider;
+use Laravel\Ai\Providers\Concerns\GeneratesAudio;
 use Laravel\Ai\Providers\Concerns\GeneratesEmbeddings;
 use Laravel\Ai\Providers\Concerns\GeneratesImages;
 use Laravel\Ai\Providers\Concerns\GeneratesText;
+use Laravel\Ai\Providers\Concerns\HasAudioGateway;
 use Laravel\Ai\Providers\Concerns\HasEmbeddingGateway;
 use Laravel\Ai\Providers\Concerns\HasImageGateway;
 use Laravel\Ai\Providers\Concerns\HasRerankingGateway;
@@ -24,11 +28,13 @@ use Laravel\Ai\Providers\Concerns\Reranks;
 use Laravel\Ai\Providers\Concerns\StreamsText;
 use Laravel\Ai\Providers\Provider;
 
-class BedrockProvider extends Provider implements EmbeddingProvider, ImageProvider, RerankingProvider, TextProvider
+class BedrockProvider extends Provider implements AudioProvider, EmbeddingProvider, ImageProvider, RerankingProvider, TextProvider
 {
+    use GeneratesAudio;
     use GeneratesEmbeddings;
     use GeneratesImages;
     use GeneratesText;
+    use HasAudioGateway;
     use HasEmbeddingGateway;
     use HasImageGateway;
     use HasRerankingGateway;
@@ -46,6 +52,11 @@ class BedrockProvider extends Provider implements EmbeddingProvider, ImageProvid
         return $this->textGateway ??= new BedrockGateway;
     }
 
+    public function audioGateway(): AudioGateway
+    {
+        return $this->audioGateway ??= new BedrockGateway;
+    }
+
     public function embeddingGateway(): EmbeddingGateway
     {
         return $this->embeddingGateway ??= new BedrockGateway;
@@ -54,6 +65,11 @@ class BedrockProvider extends Provider implements EmbeddingProvider, ImageProvid
     public function defaultTextModel(): string
     {
         return $this->config['models']['text']['default'] ?? 'global.anthropic.claude-sonnet-4-6';
+    }
+
+    public function defaultAudioModel(): string
+    {
+        return $this->config['models']['audio']['default'] ?? 'generative';
     }
 
     public function cheapestTextModel(): string

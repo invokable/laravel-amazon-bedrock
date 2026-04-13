@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Revolution\Amazon\Bedrock\Ai;
 
 use Generator;
+use Laravel\Ai\Contracts\Gateway\AudioGateway;
 use Laravel\Ai\Contracts\Gateway\EmbeddingGateway;
 use Laravel\Ai\Contracts\Gateway\ImageGateway;
 use Laravel\Ai\Contracts\Gateway\RerankingGateway;
@@ -14,12 +15,13 @@ use Laravel\Ai\Gateway\Concerns\InvokesTools;
 use Laravel\Ai\Gateway\TextGenerationOptions;
 use Laravel\Ai\Responses\TextResponse;
 
-class BedrockGateway implements EmbeddingGateway, ImageGateway, RerankingGateway, TextGateway
+class BedrockGateway implements AudioGateway, EmbeddingGateway, ImageGateway, RerankingGateway, TextGateway
 {
     use Concerns\BuildsConverseRequests;
     use Concerns\BuildsTextRequests;
     use Concerns\CreatesBedrockClient;
     use Concerns\DetectsModelApi;
+    use Concerns\GeneratesAudio;
     use Concerns\GeneratesEmbeddings;
     use Concerns\GeneratesImages;
     use Concerns\HandlesConverseStreaming;
