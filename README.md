@@ -8,17 +8,17 @@
 
 An Amazon Bedrock driver for the [Laravel AI SDK](https://laravel.com/docs/ai-sdk), enabling text generation, streaming, tool use (function calling), structured output, embeddings, image generation, audio (TTS), and reranking via models on AWS Bedrock.
 
-| Feature            | Supported Models                                                                                              |
-|--------------------|---------------------------------------------------------------------------------------------------------------|
-| Text, Streaming    | Anthropic Claude, Amazon Nova, Meta Llama, Mistral, Cohere Command R, DeepSeek, AI21 Jamba (via Converse API) |
-| Tool Use           | Anthropic Claude, Amazon Nova, Meta Llama 3.1+, Mistral Large, Cohere Command R                               |
-| Structured Output  | Anthropic Claude, Amazon Nova, Meta Llama 3.1+, Mistral Large, Cohere Command R                               |
-| Images             | Amazon Nova Canvas (default), Stability AI models.                                                            |
-| Audio(TTS)         | Amazon Polly (generative, neural, long-form, standard engines)                                                |
-| Transcription(STT) |                                                                                                               |
-| Embeddings         | Amazon Titan Embeddings V2 (default), Cohere Embed English/Multilingual V3.                                   |
-| Reranking          | Cohere Rerank 3.5, Amazon Rerank 1.0                                                                          |
-| Files              |                                                                                                               |
+| Feature            | API key | Supported Models                                                                                              |
+|--------------------|---------|---------------------------------------------------------------------------------------------------------------|
+| Text, Streaming    | ✅       | Anthropic Claude, Amazon Nova, Meta Llama, Mistral, Cohere Command R, DeepSeek, AI21 Jamba (via Converse API) |
+| Tool Use           | ✅       | Anthropic Claude, Amazon Nova, Meta Llama 3.1+, Mistral Large, Cohere Command R                               |
+| Structured Output  | ✅       | Anthropic Claude, Amazon Nova, Meta Llama 3.1+, Mistral Large, Cohere Command R                               |
+| Images             | ✅       | Amazon Nova Canvas (default), Stability AI models.                                                            |
+| Audio(TTS)         | ❌       | Amazon Polly (generative, neural, long-form, standard engines)                                                |
+| Transcription(STT) |         |                                                                                                               |
+| Embeddings         | ✅       | Amazon Titan Embeddings V2 (default), Cohere Embed English/Multilingual V3.                                   |
+| Reranking          | ❌       | Cohere Rerank 3.5, Amazon Rerank 1.0                                                                          |
+| Files              |         |                                                                                                               |
 
 - **Authentication**: Bedrock API key, AWS IAM credentials (SigV4), or default AWS credential chain (IAM roles, instance profiles, etc.).
 - **Cache Control**: Ephemeral cache always enabled on system prompts (Anthropic models).
