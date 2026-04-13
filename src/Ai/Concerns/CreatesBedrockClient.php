@@ -36,7 +36,7 @@ trait CreatesBedrockClient
      * 2. Bearer token (Bedrock API key only)
      * 3. SigV4 with default AWS credential chain (IAM roles, env vars, instance profiles)
      */
-    protected function authenticate(PendingRequest $client, Provider $provider, string $region): PendingRequest
+    protected function authenticate(PendingRequest $client, Provider $provider, string $region, string $service = 'bedrock'): PendingRequest
     {
         $config = $provider->additionalConfiguration();
         $secret = $config['secret'] ?? null;
@@ -45,22 +45,22 @@ trait CreatesBedrockClient
         if (filled($secret)) {
             $credentials = new Credentials((string) $key, $secret, $config['token'] ?? null);
 
-            return $this->withSigV4Signing($client, $credentials, $region);
+            return $this->withSigV4Signing($client, $credentials, $region, $service);
         }
 
         if (filled($key)) {
             return $client->withToken($key);
         }
 
-        return $this->withDefaultAwsCredentials($client, $config, $region);
+        return $this->withDefaultAwsCredentials($client, $config, $region, $service);
     }
 
     /**
      * Add SigV4 signing middleware to the HTTP client.
      */
-    protected function withSigV4Signing(PendingRequest $client, CredentialsInterface $credentials, string $region): PendingRequest
+    protected function withSigV4Signing(PendingRequest $client, CredentialsInterface $credentials, string $region, string $service = 'bedrock'): PendingRequest
     {
-        $signer = new SignatureV4('bedrock', $region);
+        $signer = new SignatureV4($service, $region);
 
         return $client->withMiddleware(function (callable $handler) use ($signer, $credentials): callable {
             return function (RequestInterface $request, array $options) use ($handler, $signer, $credentials) {
@@ -72,12 +72,12 @@ trait CreatesBedrockClient
     /**
      * Resolve credentials from the default AWS credential chain and apply SigV4 signing.
      */
-    protected function withDefaultAwsCredentials(PendingRequest $client, array $config, string $region): PendingRequest
+    protected function withDefaultAwsCredentials(PendingRequest $client, array $config, string $region, string $service = 'bedrock'): PendingRequest
     {
         $provider = CredentialProvider::defaultProvider($config);
         $credentials = $provider()->wait();
 
-        return $this->withSigV4Signing($client, $credentials, $region);
+        return $this->withSigV4Signing($client, $credentials, $region, $service);
     }
 
     /**
@@ -97,6 +97,25 @@ trait CreatesBedrockClient
             ->throw();
 
         return $this->authenticate($client, $provider, $region);
+    }
+
+    /**
+     * Create an HTTP client for the Amazon Polly service.
+     *
+     * Used for text-to-speech (TTS) audio generation.
+     * Polly is a separate AWS service from Bedrock and uses SigV4 signing with the "polly" service name.
+     */
+    protected function pollyClient(Provider $provider, ?int $timeout = null): PendingRequest
+    {
+        $config = $provider->additionalConfiguration();
+        $region = $config['region'] ?? 'us-east-1';
+
+        $client = Http::baseUrl("https://polly.{$region}.amazonaws.com")
+            ->contentType('application/json')
+            ->timeout($timeout ?? (int) ($config['timeout'] ?? 30))
+            ->throw();
+
+        return $this->authenticate($client, $provider, $region, 'polly');
     }
 
     protected function invokeUrl(string $model): string

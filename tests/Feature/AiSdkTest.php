@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Ai\AnonymousAgent;
+use Laravel\Ai\Audio;
 use Laravel\Ai\Embeddings;
 use Laravel\Ai\Prompts\AgentPrompt;
+use Laravel\Ai\Prompts\AudioPrompt;
 use Laravel\Ai\Prompts\EmbeddingsPrompt;
 use Laravel\Ai\Prompts\RerankingPrompt;
 use Laravel\Ai\Reranking;
+use Laravel\Ai\Responses\AudioResponse;
 use Laravel\Ai\Responses\RerankingResponse;
 use Laravel\Ai\StructuredAnonymousAgent;
 use Revolution\Amazon\Bedrock\Bedrock;
@@ -80,6 +83,19 @@ describe('Laravel AI SDK', function () {
 
         Reranking::assertReranked(function (RerankingPrompt $prompt) {
             return $prompt->query === 'What is Laravel?';
+        });
+    });
+
+    test('Audio', function () {
+        Audio::fake();
+
+        $response = Audio::of('I love coding with Laravel.')
+            ->generate(provider: Bedrock::KEY);
+
+        expect($response)->toBeInstanceOf(AudioResponse::class);
+
+        Audio::assertGenerated(function (AudioPrompt $prompt) {
+            return $prompt->contains('Laravel');
         });
     });
 });
