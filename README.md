@@ -6,7 +6,7 @@
 
 ## Overview
 
-An Amazon Bedrock driver for the [Laravel AI SDK](https://laravel.com/docs/ai-sdk), enabling text generation, streaming, tool use (function calling), structured output, embeddings, image generation, audio (TTS), and reranking via models on AWS Bedrock.
+An Amazon Bedrock driver for the [Laravel AI SDK](https://laravel.com/docs/ai-sdk), enabling text generation, streaming, tool use (function calling), structured output, embeddings, image generation, audio (TTS), transcription (STT), and reranking via models on AWS Bedrock.
 
 | Feature            | API key | Supported Models                                                                                              |
 |--------------------|---------|---------------------------------------------------------------------------------------------------------------|
@@ -15,7 +15,7 @@ An Amazon Bedrock driver for the [Laravel AI SDK](https://laravel.com/docs/ai-sd
 | Structured Output  | ✅       | Anthropic Claude, Amazon Nova, Meta Llama 3.1+, Mistral Large, Cohere Command R                               |
 | Images             | ✅       | Amazon Nova Canvas (default), Stability AI models.                                                            |
 | Audio(TTS)         | ❌       | Amazon Polly (generative, neural, long-form, standard engines)                                                |
-| Transcription(STT) |         |                                                                                                               |
+| Transcription(STT) | ❌       | Amazon Nova 2 Lite (via Converse API AudioBlock)                                                              |
 | Embeddings         | ✅       | Amazon Titan Embeddings V2 (default), Cohere Embed English/Multilingual V3.                                   |
 | Reranking          | ❌       | Cohere Rerank 3.5, Amazon Rerank 1.0                                                                          |
 | Files              |         |                                                                                                               |
@@ -49,6 +49,7 @@ Add the `bedrock` driver to `config/ai.php`:
 'default_for_audio' => 'bedrock',
 'default_for_embeddings' => 'bedrock',
 'default_for_reranking' => 'bedrock',
+'default_for_transcription' => 'bedrock',
 
 'providers' => [
     'bedrock' => [
@@ -129,6 +130,7 @@ The default credential chain automatically resolves credentials from environment
 | `models.image.default`         | Default image model             | `amazon.nova-canvas-v1:0`                         |
 | `models.audio.default`         | Default audio (TTS) engine      | `generative`                                      |
 | `models.reranking.default`     | Default reranking model         | `cohere.rerank-v3-5:0`                            |
+| `models.transcription.default` | Default transcription model     | `us.amazon.nova-2-lite-v1:0`                      |
 
 ## Text Generation
 
@@ -534,6 +536,47 @@ $response = Audio::of('I love coding with Laravel.')
 
 > [!WARNING]
 > Amazon Polly is a separate AWS service from Bedrock. The Bedrock API key (bearer token) cannot be used with Polly. Use AWS IAM credentials (SigV4) or the default AWS credential chain instead.
+
+## Transcription (STT)
+
+Transcribe audio to text using [Amazon Nova 2 Lite](https://docs.aws.amazon.com/nova/latest/userguide/what-is-nova.html) via the Converse API AudioBlock:
+
+```php
+use Laravel\Ai\Transcription;
+
+$response = Transcription::of('base64-encoded-audio-data')
+    ->generate(provider: 'bedrock');
+
+echo $response->text;
+```
+
+From a file path:
+
+```php
+$response = Transcription::fromPath('/path/to/audio.mp3')
+    ->generate(provider: 'bedrock');
+```
+
+Specify language and enable speaker diarization:
+
+```php
+$response = Transcription::of($audioData)
+    ->language('en')
+    ->diarize()
+    ->generate(provider: 'bedrock');
+```
+
+Use a custom model:
+
+```php
+$response = Transcription::of($audioData)
+    ->generate(provider: 'bedrock', model: 'us.amazon.nova-2-pro-v1:0');
+```
+
+**Supported audio formats:** MP3, WAV, FLAC, OGG, WebM, AAC, M4A, Opus, MKA.
+
+> [!WARNING]
+> Transcription uses the Converse API AudioBlock, which sends audio to an LLM for transcription. The Bedrock API key (bearer token) cannot be used with the Converse API. Use AWS IAM credentials (SigV4) or the default AWS credential chain. Segment-level timestamps are not available with this approach — only the full transcription text is returned.
 
 ## Embeddings
 

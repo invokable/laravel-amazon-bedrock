@@ -10,12 +10,13 @@ use Laravel\Ai\Contracts\Gateway\EmbeddingGateway;
 use Laravel\Ai\Contracts\Gateway\ImageGateway;
 use Laravel\Ai\Contracts\Gateway\RerankingGateway;
 use Laravel\Ai\Contracts\Gateway\TextGateway;
+use Laravel\Ai\Contracts\Gateway\TranscriptionGateway;
 use Laravel\Ai\Contracts\Providers\TextProvider;
 use Laravel\Ai\Gateway\Concerns\InvokesTools;
 use Laravel\Ai\Gateway\TextGenerationOptions;
 use Laravel\Ai\Responses\TextResponse;
 
-class BedrockGateway implements AudioGateway, EmbeddingGateway, ImageGateway, RerankingGateway, TextGateway
+class BedrockGateway implements AudioGateway, EmbeddingGateway, ImageGateway, RerankingGateway, TextGateway, TranscriptionGateway
 {
     use Concerns\BuildsConverseRequests;
     use Concerns\BuildsTextRequests;
@@ -24,6 +25,7 @@ class BedrockGateway implements AudioGateway, EmbeddingGateway, ImageGateway, Re
     use Concerns\GeneratesAudio;
     use Concerns\GeneratesEmbeddings;
     use Concerns\GeneratesImages;
+    use Concerns\GeneratesTranscriptions;
     use Concerns\HandlesConverseStreaming;
     use Concerns\HandlesTextStreaming;
     use Concerns\MapsMessages;
