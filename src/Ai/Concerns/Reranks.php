@@ -32,8 +32,11 @@ trait Reranks
 
         $body = $this->buildRerankRequestBody($model, $documents, $query, $limit, $region);
 
-        $response = $this->agentRuntimeClient($provider)
-            ->post('rerank', $body);
+        $response = $this->withErrorHandling(
+            $provider->name(),
+            fn () => $this->agentRuntimeClient($provider)
+                ->post('rerank', $body),
+        );
 
         return $this->parseRerankResponse($response->json(), $documents, $provider, $model);
     }

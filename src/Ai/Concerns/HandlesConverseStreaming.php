@@ -309,9 +309,12 @@ trait HandlesConverseStreaming
             ], $toolResults),
         ];
 
-        $response = $this->client($provider, $model, $timeout)
-            ->withOptions(['stream' => true])
-            ->post($this->converseStreamUrl($model), $requestBody);
+        $response = $this->withErrorHandling(
+            $provider->name(),
+            fn () => $this->client($provider, $model, $timeout)
+                ->withOptions(['stream' => true])
+                ->post($this->converseStreamUrl($model), $requestBody),
+        );
 
         yield from $this->processConverseStream(
             $invocationId,

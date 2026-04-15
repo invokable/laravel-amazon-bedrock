@@ -56,8 +56,11 @@ trait GeneratesTranscriptions
             ],
         ];
 
-        $response = $this->client($provider, $model, $timeout)
-            ->post($this->converseUrl($model), $body);
+        $response = $this->withErrorHandling(
+            $provider->name(),
+            fn () => $this->client($provider, $model, $timeout)
+                ->post($this->converseUrl($model), $body),
+        );
 
         $data = $response->json();
 

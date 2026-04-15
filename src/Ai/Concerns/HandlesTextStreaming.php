@@ -307,9 +307,12 @@ trait HandlesTextStreaming
             ], $toolResults),
         ];
 
-        $response = $this->client($provider, $model, $timeout)
-            ->withOptions(['stream' => true])
-            ->post($this->streamUrl($model), $requestBody);
+        $response = $this->withErrorHandling(
+            $provider->name(),
+            fn () => $this->client($provider, $model, $timeout)
+                ->withOptions(['stream' => true])
+                ->post($this->streamUrl($model), $requestBody),
+        );
 
         yield from $this->processTextStream(
             $invocationId,
