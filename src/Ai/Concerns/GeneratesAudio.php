@@ -40,8 +40,11 @@ trait GeneratesAudio
             'TextType' => 'text',
         ]);
 
-        $response = $this->pollyClient($provider, $timeout)
-            ->post('v1/speech', $body);
+        $response = $this->withErrorHandling(
+            $provider->name(),
+            fn () => $this->pollyClient($provider, $timeout)
+                ->post('v1/speech', $body),
+        );
 
         return new AudioResponse(
             base64_encode($response->body()),

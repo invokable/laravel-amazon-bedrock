@@ -45,9 +45,11 @@ trait GeneratesImages
             ],
         ];
 
-        $response = $this->client($provider, $model, $timeout ?? 120)
-            ->post($this->invokeUrl($model), $body)
-            ->json();
+        $response = $this->withErrorHandling(
+            $provider->name(),
+            fn () => $this->client($provider, $model, $timeout ?? 120)
+                ->post($this->invokeUrl($model), $body),
+        )->json();
 
         $images = new Collection(
             array_map(

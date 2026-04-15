@@ -29,13 +29,15 @@ trait GeneratesEmbeddings
         $totalTokens = 0;
 
         foreach ($inputs as $input) {
-            $response = $this->client($provider, $model, $timeout)
-                ->post($this->invokeUrl($model), [
-                    'inputText' => $input,
-                    'dimensions' => $dimensions,
-                    'normalize' => true,
-                ])
-                ->json();
+            $response = $this->withErrorHandling(
+                $provider->name(),
+                fn () => $this->client($provider, $model, $timeout)
+                    ->post($this->invokeUrl($model), [
+                        'inputText' => $input,
+                        'dimensions' => $dimensions,
+                        'normalize' => true,
+                    ]),
+            )->json();
 
             $embeddings[] = $response['embedding'] ?? [];
             $totalTokens += $response['inputTextTokenCount'] ?? 0;

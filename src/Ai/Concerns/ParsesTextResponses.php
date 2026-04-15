@@ -198,8 +198,11 @@ trait ParsesTextResponses
             'content' => $toolResultContent,
         ];
 
-        $response = $this->client($provider, $model, $timeout)
-            ->post($this->invokeUrl($model), $requestBody);
+        $response = $this->withErrorHandling(
+            $provider->name(),
+            fn () => $this->client($provider, $model, $timeout)
+                ->post($this->invokeUrl($model), $requestBody),
+        );
 
         $data = $response->json();
 

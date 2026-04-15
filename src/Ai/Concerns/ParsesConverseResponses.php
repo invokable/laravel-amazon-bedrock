@@ -171,8 +171,11 @@ trait ParsesConverseResponses
             'content' => $toolResultContent,
         ];
 
-        $response = $this->client($provider, $model, $timeout)
-            ->post($this->converseUrl($model), $requestBody);
+        $response = $this->withErrorHandling(
+            $provider->name(),
+            fn () => $this->client($provider, $model, $timeout)
+                ->post($this->converseUrl($model), $requestBody),
+        );
 
         return $this->processConverseResponse(
             $response->json(),

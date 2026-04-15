@@ -18,9 +18,10 @@ An Amazon Bedrock driver for the [Laravel AI SDK](https://laravel.com/docs/ai-sd
 | Transcription(STT) | ❌       | Amazon Nova 2 Lite (via Converse API AudioBlock)                                                              |
 | Embeddings         | ✅       | Amazon Titan Embeddings V2 (default), Cohere Embed English/Multilingual V3.                                   |
 | Reranking          | ❌       | Cohere Rerank 3.5, Amazon Rerank 1.0                                                                          |
-| Files              |         |                                                                                                               |
+| Files              | —       | Not supported (Bedrock has no server-side file storage API)                                                   |
 
 - **Authentication**: Bedrock API key, AWS IAM credentials (SigV4), or default AWS credential chain (IAM roles, instance profiles, etc.).
+- **Failover**: Supports the AI SDK's multi-provider failover. Rate limit (429), overload (503, 529), and credit errors are mapped to failoverable exceptions.
 - **Cache Control**: Ephemeral cache always enabled on system prompts (Anthropic models).
 - **Multi-model**: Anthropic Claude uses the native Anthropic Messages API; all other models use the [Bedrock Converse API](https://docs.aws.amazon.com/bedrock/latest/userguide/conversation-inference.html) for a unified interface.
 
