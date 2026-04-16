@@ -658,7 +658,7 @@ describe('BedrockProvider model defaults', function () {
     test('returns smartest text model', function () {
         $provider = makeProvider();
 
-        expect($provider->smartestTextModel())->toBe('global.anthropic.claude-opus-4-6-v1');
+        expect($provider->smartestTextModel())->toBe('global.anthropic.claude-opus-4-7');
     });
 
     test('uses custom models from config', function () {
