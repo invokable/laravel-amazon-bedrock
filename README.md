@@ -16,7 +16,7 @@ An Amazon Bedrock driver for the [Laravel AI SDK](https://laravel.com/docs/ai-sd
 | Images             | ✅       | Amazon Nova Canvas (default), Stability AI models.                                                            |
 | Audio(TTS)         | ❌       | Amazon Polly (generative, neural, long-form, standard engines)                                                |
 | Transcription(STT) | ❌       | Amazon Nova 2 Lite (via Converse API AudioBlock)                                                              |
-| Embeddings         | ✅       | Amazon Titan Embeddings V2 (default), Cohere Embed English/Multilingual V3.                                   |
+| Embeddings         | ✅       | Amazon Titan Embeddings V2 (default), Cohere Embed English/Multilingual V3, Cohere Embed V4 (batch support). |
 | Reranking          | ❌       | Cohere Rerank 3.5, Amazon Rerank 1.0                                                                          |
 | Files              | —       | Not supported (Bedrock has no server-side file storage API)                                                   |
 
@@ -612,6 +612,29 @@ $response = Embeddings::for(['Hello world'])
     ->dimensions(1024)
     ->generate(provider: 'bedrock', model: 'amazon.titan-embed-text-v2:0');
 ```
+
+### Cohere Embed Models
+
+Cohere Embed models are automatically detected and use a batch API — all inputs are sent in a single request instead of one request per input, making them more efficient for multiple texts.
+
+```php
+// Cohere Embed English V3
+$response = Embeddings::for(['Hello world', 'Foo bar'])
+    ->dimensions(1024)
+    ->generate(provider: 'bedrock', model: 'cohere.embed-english-v3');
+
+// Cohere Embed Multilingual V3
+$response = Embeddings::for(['Hello', 'こんにちは'])
+    ->dimensions(1024)
+    ->generate(provider: 'bedrock', model: 'cohere.embed-multilingual-v3');
+
+// Cohere Embed V4 (supports configurable output dimensions 256–1536)
+$response = Embeddings::for(['Hello world'])
+    ->dimensions(512)
+    ->generate(provider: 'bedrock', model: 'cohere.embed-v4');
+```
+
+> **Note:** Cohere Embed models do not return token counts — `$response->tokens` will always be `0`. Titan Embeddings uses one HTTP request per input, while Cohere models batch all inputs into a single request.
 
 ## Reranking
 
