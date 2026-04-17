@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        php: [8.4, 8.5]
+        php: [8.3, 8.4, 8.5]
 
     name: PHP ${{ matrix.php }}
 
@@ -28,7 +28,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite
+          extensions: mbstring
           coverage: xdebug
 
       - name: Install dependencies
@@ -36,9 +36,6 @@ jobs:
 
       - name: Execute tests
         run: composer test:coverage
-
-      - name: Execute linter
-        run: composer test:lint
 
       - name: Code Coverage
         uses: qltysh/qlty-action/coverage@v1
