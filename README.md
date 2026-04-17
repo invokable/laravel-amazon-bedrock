@@ -27,7 +27,7 @@ An Amazon Bedrock driver for the [Laravel AI SDK](https://laravel.com/docs/ai-sd
 
 ## Requirements
 
-- PHP >= 8.4
+- PHP >= 8.3
 - Laravel >= 12.x
 
 ## Installation
