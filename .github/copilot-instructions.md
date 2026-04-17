@@ -33,6 +33,12 @@ GitHub Agentic Workflowsで少しずつ実行。
 - `composer run test` - Run pest tests.
 - `composer run lint` - Run pint code formatter.
 
+## Versioning
+
+Laravel AI SDKのメジャーバージョンとこのパッケージのバージョンを合わせる。
+v0.6.xの間はこのパッケージもv0.6.x。
+人間がタグを付けてリリース作業する部分だけど`composer.json`を変更する時はLaravel AI SDKに合わせる。
+
 ## Development Guidelines
 
 - cache_control can only be used up to 4 blocks, so only system prompts are supported.
