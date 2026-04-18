@@ -35,7 +35,7 @@ trait GeneratesImages
         ?int $timeout = null,
     ): ImageResponse {
         if ($this->isStabilityModel($model)) {
-            return $this->generateStabilityImage($provider, $model, $prompt, $timeout);
+            return $this->generateStabilityImage($provider, $model, $prompt, $size, $timeout);
         }
 
         return $this->generateNovaCanvasImage($provider, $model, $prompt, $size, $quality, $timeout);
@@ -55,9 +55,13 @@ trait GeneratesImages
         ImageProvider $provider,
         string $model,
         string $prompt,
+        ?string $size = null,
         ?int $timeout = null,
     ): ImageResponse {
-        $body = ['prompt' => $prompt];
+        $body = [
+            'prompt' => $prompt,
+            'aspect_ratio' => $size ?? '1:1',
+        ];
 
         $response = $this->withErrorHandling(
             $provider->name(),
