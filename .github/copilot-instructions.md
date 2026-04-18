@@ -17,7 +17,7 @@ Prismにバグがあったので作ったパッケージだったけどその後
 - `workbench/routes/console.php`に開発環境でBedrock APIキーをセットして実際に動かすArtisanコマンドを作る。APIキーで使えないreranking以外は成功したのでここまで正しく実装できている。JsonSchemaの使い方がREADMEの記載から間違っていたので今後も注意。
 - [x] `HandlesFailoverErrors`トレイトへの対応が必要かつ可能なら追加。AI SDKのfailover機能用。
 - [x] 主な機能追加は完了したけど初期からdiscussionに書いていた **Cohere Embed batch support** が未完了かも。
-- Imageで使っている`amazon.nova-canvas-v1:0`は廃止が決定しているので別のモデルに変更。とはいえ`amazon.titan-image-generator-v2:0`も廃止なので代わりのモデルは [Stability AI](https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-stability-diffusion.html) のいくつかしかないかも。 [Model lifecycle](https://docs.aws.amazon.com/bedrock/latest/userguide/model-lifecycle.html)
+- [x] Imageで使っている`amazon.nova-canvas-v1:0`は廃止が決定しているので別のモデルに変更。とはいえ`amazon.titan-image-generator-v2:0`も廃止なので代わりのモデルは [Stability AI](https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-stability-diffusion.html) のいくつかしかないかも。 [Model lifecycle](https://docs.aws.amazon.com/bedrock/latest/userguide/model-lifecycle.html)
 - 機能追加のタスクがなくなったら既存コードのリファクタリングやテスト追加やLaravel AI SDKのアップデート対応を行う。Laravel AI SDKはまだv0.x、composerはv1.0前では+0.1でもメジャーバージョンアップ扱いなのでまだまだ破壊的変更が入る可能性がある。
 
 GitHub Agentic Workflowsで少しずつ実行。
