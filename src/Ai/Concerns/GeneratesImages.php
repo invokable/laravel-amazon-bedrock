@@ -15,17 +15,79 @@ use Laravel\Ai\Responses\ImageResponse;
 trait GeneratesImages
 {
     /**
-     * Generate an image using Amazon Nova Canvas.
+     * Generate an image using Amazon Bedrock.
+     *
+     * Supports:
+     * - Stability AI models (stability.*): SD3.5 Large, Stable Image Core, Stable Image Ultra
+     * - Amazon Nova Canvas (amazon.nova-canvas-v1:0) — deprecated, kept for backward compatibility
      *
      * @param  array<ImageFile>  $attachments
-     * @param  '3:2'|'2:3'|'1:1'  $size
-     * @param  'low'|'medium'|'high'  $quality
+     * @param  '3:2'|'2:3'|'1:1'|null  $size
+     * @param  'low'|'medium'|'high'|null  $quality
      */
     public function generateImage(
         ImageProvider $provider,
         string $model,
         string $prompt,
         array $attachments = [],
+        ?string $size = null,
+        ?string $quality = null,
+        ?int $timeout = null,
+    ): ImageResponse {
+        if ($this->isStabilityModel($model)) {
+            return $this->generateStabilityImage($provider, $model, $prompt, $timeout);
+        }
+
+        return $this->generateNovaCanvasImage($provider, $model, $prompt, $size, $quality, $timeout);
+    }
+
+    protected function isStabilityModel(string $model): bool
+    {
+        return str_starts_with($model, 'stability.');
+    }
+
+    /**
+     * Generate image using Stability AI API format.
+     * Request: {"prompt": "..."}
+     * Response: {"seeds": [...], "finish_reasons": [...], "images": ["base64..."]}
+     */
+    protected function generateStabilityImage(
+        ImageProvider $provider,
+        string $model,
+        string $prompt,
+        ?int $timeout = null,
+    ): ImageResponse {
+        $body = ['prompt' => $prompt];
+
+        $response = $this->withErrorHandling(
+            $provider->name(),
+            fn () => $this->client($provider, $model, $timeout ?? 120)
+                ->post($this->invokeUrl($model), $body),
+        )->json();
+
+        $images = new Collection(
+            array_map(
+                fn (string $base64) => new GeneratedImage($base64, 'image/png'),
+                $response['images'] ?? [],
+            ),
+        );
+
+        return new ImageResponse(
+            $images,
+            new Usage,
+            new Meta($provider->name(), $model),
+        );
+    }
+
+    /**
+     * Generate image using Amazon Nova Canvas API format (deprecated).
+     * Request: {"taskType": "TEXT_IMAGE", "textToImageParams": {...}, "imageGenerationConfig": {...}}
+     * Response: {"images": ["base64..."]}
+     */
+    protected function generateNovaCanvasImage(
+        ImageProvider $provider,
+        string $model,
+        string $prompt,
         ?string $size = null,
         ?string $quality = null,
         ?int $timeout = null,

@@ -105,7 +105,7 @@ class BedrockProvider extends Provider implements AudioProvider, EmbeddingProvid
 
     public function defaultImageModel(): string
     {
-        return $this->config['models']['image']['default'] ?? 'amazon.nova-canvas-v1:0';
+        return $this->config['models']['image']['default'] ?? 'stability.stable-image-core-v1:1';
     }
 
     public function rerankingGateway(): RerankingGateway
