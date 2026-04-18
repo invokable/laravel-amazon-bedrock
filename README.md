@@ -467,7 +467,7 @@ $response->store('images', 's3');
 echo $response->toHtml('Steampunk robot');
 ```
 
-<img src="art/bedrock-image-1776081529.png" alt="A cute steampunk robot reading a book in a cozy library" height="300" width="300"/>
+<img src="art/bedrock-image-1776081529_nova-canvas.png" alt="A cute steampunk robot reading a book in a cozy library" height="300" width="300"/>
 
 Available Stability AI models (all require `us-west-2` region):
 
