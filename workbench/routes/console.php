@@ -16,6 +16,7 @@ use function Laravel\Ai\agent;
 // 開発環境でのテスト用コマンド。
 // Bedrock APIキーで使えない機能は除く。
 // configはworkbench内の.envとWorkbenchServiceProviderでセットしている。
+// .envを変更後はcomposer run buildを実行してtestbench内の.envも更新する。
 
 // -----------------------------------------------------------------------
 // Text Generation (Anthropic Claude via native API)
@@ -133,7 +134,8 @@ Artisan::command('bedrock:embeddings', function () {
 })->purpose('Generate embeddings with Amazon Titan Embeddings V2');
 
 // -----------------------------------------------------------------------
-// Image Generation (Amazon Nova Canvas)
+// Image Generation (Stability AI)
+// us-west-2 only
 // vendor/bin/testbench bedrock:image
 // -----------------------------------------------------------------------
 Artisan::command('bedrock:image', function () {
@@ -147,7 +149,7 @@ Artisan::command('bedrock:image', function () {
 
     $this->info('Image saved to: '.$path);
     $this->info('MIME type: '.$image->mime);
-})->purpose('Image generation with Amazon Nova Canvas');
+})->purpose('Image generation with Stability AI');
 
 // -----------------------------------------------------------------------
 // Reranking (Cohere Rerank)
