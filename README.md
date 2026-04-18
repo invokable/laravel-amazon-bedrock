@@ -13,7 +13,7 @@ An Amazon Bedrock driver for the [Laravel AI SDK](https://laravel.com/docs/ai-sd
 | Text, Streaming    | ✅       | Anthropic Claude, Amazon Nova, Meta Llama, Mistral, Cohere Command R, DeepSeek, AI21 Jamba (via Converse API) |
 | Tool Use           | ✅       | Anthropic Claude, Amazon Nova, Meta Llama 3.1+, Mistral Large, Cohere Command R                               |
 | Structured Output  | ✅       | Anthropic Claude, Amazon Nova, Meta Llama 3.1+, Mistral Large, Cohere Command R                               |
-| Images             | ✅       | Amazon Nova Canvas (default), Stability AI models.                                                            |
+| Images             | ✅       | Stability AI models (default), Amazon Nova Canvas (deprecated).                                               |
 | Audio(TTS)         | ❌       | Amazon Polly (generative, neural, long-form, standard engines)                                                |
 | Transcription(STT) | ❌       | Amazon Nova 2 Lite (via Converse API AudioBlock)                                                              |
 | Embeddings         | ✅       | Amazon Titan Embeddings V2 (default), Cohere Embed English/Multilingual V3, Cohere Embed V4 (batch support).  |
@@ -128,7 +128,7 @@ The default credential chain automatically resolves credentials from environment
 | `models.text.smartest`         | Smartest text model             | `global.anthropic.claude-opus-4-7`                |
 | `models.embeddings.default`    | Default embeddings model        | `amazon.titan-embed-text-v2:0`                    |
 | `models.embeddings.dimensions` | Default embedding dimensions    | `1024`                                            |
-| `models.image.default`         | Default image model             | `amazon.nova-canvas-v1:0`                         |
+| `models.image.default`         | Default image model             | `stability.stable-image-core-v1:1`                |
 | `models.audio.default`         | Default audio (TTS) engine      | `generative`                                      |
 | `models.reranking.default`     | Default reranking model         | `cohere.rerank-v3-5:0`                            |
 | `models.transcription.default` | Default transcription model     | `us.amazon.nova-2-lite-v1:0`                      |
@@ -449,11 +449,12 @@ class BedrockAgent implements Agent
 
 ## Image Generation
 
-Generate images using Amazon Nova Canvas:
+Generate images using Stability AI models (default) or Amazon Nova Canvas:
 
 ```php
 use Laravel\Ai\Image;
 
+// Uses Stability AI Stable Image Core by default
 $response = Image::of('A cute steampunk robot')->generate(provider: 'bedrock');
 
 // Get the first image
@@ -468,20 +469,33 @@ echo $response->toHtml('Steampunk robot');
 
 <img src="art/bedrock-image-1776081529.png" alt="A cute steampunk robot reading a book in a cozy library" height="300" width="300"/>
 
-Specify size and quality:
+Available Stability AI models (all require `us-west-2` region):
 
 ```php
-$response = Image::of('A beautiful landscape')
-    ->size('3:2')           // '1:1', '3:2', or '2:3'
-    ->quality('high')       // 'low', 'medium', or 'high' (high → Nova Canvas "premium")
-    ->generate(provider: 'bedrock');
+// Stable Image Core — fast and affordable (default)
+$response = Image::of('A landscape')
+    ->generate(provider: 'bedrock', model: 'stability.stable-image-core-v1:1');
+
+// Stable Diffusion 3.5 Large — high quality, high quantity
+$response = Image::of('A portrait')
+    ->generate(provider: 'bedrock', model: 'stability.sd3-5-large-v1:0');
+
+// Stable Image Ultra — ultra-realistic, highest quality
+$response = Image::of('A luxury product')
+    ->generate(provider: 'bedrock', model: 'stability.stable-image-ultra-v1:1');
 ```
 
-Use a custom model:
+> [!NOTE]
+> All Stability AI image models are available in `us-west-2` only. Configure `AWS_DEFAULT_REGION=us-west-2` when using these models.
+
+Amazon Nova Canvas is also supported but is being deprecated by AWS:
 
 ```php
+// Nova Canvas (deprecated — available in us-east-1, ap-northeast-1, eu-west-1)
 $response = Image::of('A sunset')
-    ->generate(provider: 'bedrock', model: 'stability.sd3-5-large-v1:0');
+    ->size('3:2')           // '1:1', '3:2', or '2:3' (Nova Canvas only)
+    ->quality('high')       // 'low', 'medium', or 'high' (Nova Canvas only)
+    ->generate(provider: 'bedrock', model: 'amazon.nova-canvas-v1:0');
 ```
 
 ## Audio (TTS)

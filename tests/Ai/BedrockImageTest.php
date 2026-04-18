@@ -270,10 +270,149 @@ describe('BedrockGateway generateImage', function () {
     });
 });
 
+function fakeStabilityResponse(array $images = []): array
+{
+    return [
+        'seeds' => [123456789],
+        'finish_reasons' => [null],
+        'images' => $images ?: [base64_encode('fake-stability-png-data')],
+    ];
+}
+
+describe('BedrockGateway generateImage (Stability AI)', function () {
+    test('returns an ImageResponse for Stability AI model', function () {
+        Http::fake([
+            'bedrock-runtime.us-west-2.amazonaws.com/*' => Http::response(fakeStabilityResponse()),
+        ]);
+
+        $gateway = new BedrockGateway;
+        $response = $gateway->generateImage(
+            provider: makeProvider(['region' => 'us-west-2']),
+            model: 'stability.stable-image-core-v1:1',
+            prompt: 'A cute cat',
+        );
+
+        expect($response)->toBeInstanceOf(ImageResponse::class);
+    });
+
+    test('sends simple prompt body for Stability AI model', function () {
+        Http::fake([
+            'bedrock-runtime.us-west-2.amazonaws.com/*' => Http::response(fakeStabilityResponse()),
+        ]);
+
+        $gateway = new BedrockGateway;
+        $gateway->generateImage(
+            provider: makeProvider(['region' => 'us-west-2']),
+            model: 'stability.stable-image-core-v1:1',
+            prompt: 'A beautiful sunset',
+        );
+
+        Http::assertSent(function ($request) {
+            $body = json_decode($request->body(), true);
+
+            return isset($body['prompt'])
+                && $body['prompt'] === 'A beautiful sunset'
+                && ! isset($body['taskType'])
+                && ! isset($body['textToImageParams'])
+                && ! isset($body['imageGenerationConfig']);
+        });
+    });
+
+    test('sends request to correct URL for Stability AI model', function () {
+        Http::fake([
+            'bedrock-runtime.us-west-2.amazonaws.com/*' => Http::response(fakeStabilityResponse()),
+        ]);
+
+        $gateway = new BedrockGateway;
+        $gateway->generateImage(
+            provider: makeProvider(['region' => 'us-west-2']),
+            model: 'stability.stable-image-core-v1:1',
+            prompt: 'A cat',
+        );
+
+        Http::assertSent(function ($request) {
+            return str_contains(
+                $request->url(),
+                'bedrock-runtime.us-west-2.amazonaws.com/model/stability.stable-image-core-v1:1/invoke',
+            );
+        });
+    });
+
+    test('returns base64 image from Stability AI response', function () {
+        $base64 = base64_encode('stability-image-data');
+
+        Http::fake([
+            'bedrock-runtime.us-west-2.amazonaws.com/*' => Http::response(fakeStabilityResponse([$base64])),
+        ]);
+
+        $gateway = new BedrockGateway;
+        $response = $gateway->generateImage(
+            provider: makeProvider(['region' => 'us-west-2']),
+            model: 'stability.stable-image-core-v1:1',
+            prompt: 'A cat',
+        );
+
+        expect($response->images)->toHaveCount(1);
+        expect($response->firstImage())->toBeInstanceOf(GeneratedImage::class);
+        expect($response->firstImage()->image)->toBe($base64);
+        expect($response->firstImage()->mime)->toBe('image/png');
+    });
+
+    test('meta contains provider and model for Stability AI', function () {
+        Http::fake([
+            'bedrock-runtime.us-west-2.amazonaws.com/*' => Http::response(fakeStabilityResponse()),
+        ]);
+
+        $gateway = new BedrockGateway;
+        $response = $gateway->generateImage(
+            provider: makeProvider(['region' => 'us-west-2']),
+            model: 'stability.sd3-5-large-v1:0',
+            prompt: 'A cat',
+        );
+
+        expect($response->meta->provider)->toBe('bedrock');
+        expect($response->meta->model)->toBe('stability.sd3-5-large-v1:0');
+    });
+
+    test('works with Stable Image Ultra model', function () {
+        Http::fake([
+            'bedrock-runtime.us-west-2.amazonaws.com/*' => Http::response(fakeStabilityResponse()),
+        ]);
+
+        $gateway = new BedrockGateway;
+        $response = $gateway->generateImage(
+            provider: makeProvider(['region' => 'us-west-2']),
+            model: 'stability.stable-image-ultra-v1:1',
+            prompt: 'A landscape',
+        );
+
+        expect($response)->toBeInstanceOf(ImageResponse::class);
+
+        Http::assertSent(function ($request) {
+            return str_contains($request->url(), 'stability.stable-image-ultra-v1:1');
+        });
+    });
+
+    test('works with SD3.5 Large model', function () {
+        Http::fake([
+            'bedrock-runtime.us-west-2.amazonaws.com/*' => Http::response(fakeStabilityResponse()),
+        ]);
+
+        $gateway = new BedrockGateway;
+        $response = $gateway->generateImage(
+            provider: makeProvider(['region' => 'us-west-2']),
+            model: 'stability.sd3-5-large-v1:0',
+            prompt: 'A portrait',
+        );
+
+        expect($response)->toBeInstanceOf(ImageResponse::class);
+    });
+});
+
 describe('BedrockProvider image defaults', function () {
     test('returns default image model', function () {
         $provider = makeProvider();
-        expect($provider->defaultImageModel())->toBe('amazon.nova-canvas-v1:0');
+        expect($provider->defaultImageModel())->toBe('stability.stable-image-core-v1:1');
     });
 
     test('uses configured image model', function () {
