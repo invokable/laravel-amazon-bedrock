@@ -493,7 +493,7 @@ Amazon Nova Canvas is also supported but is being deprecated by AWS:
 ```php
 // Nova Canvas (deprecated — available in us-east-1, ap-northeast-1, eu-west-1)
 $response = Image::of('A sunset')
-    ->size('3:2')           // '1:1', '3:2', or '2:3' (Nova Canvas only)
+    ->size('3:2')           // '1:1', '3:2', or '2:3'
     ->quality('high')       // 'low', 'medium', or 'high' (Nova Canvas only)
     ->generate(provider: 'bedrock', model: 'amazon.nova-canvas-v1:0');
 ```
