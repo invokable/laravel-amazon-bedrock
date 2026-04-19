@@ -488,6 +488,59 @@ $response = Image::of('A luxury product')
 > [!NOTE]
 > All Stability AI image models are available in `us-west-2` only. Configure `AWS_DEFAULT_REGION=us-west-2` when using these models.
 
+### Image Editing with Stability AI
+
+Stability AI Image Services editing models are also supported via the `attachments()` method. Pass an input image and use an editing model to transform it:
+
+```php
+use Laravel\Ai\Files\Image as ImageFile;
+
+$inputImage = ImageFile::fromPath('/path/to/photo.jpg');
+
+// Inpaint — fill in or replace areas using a mask or alpha channel
+$response = Image::of('Replace the background with a forest')
+    ->attachments([$inputImage])
+    ->generate(provider: 'bedrock', model: 'stability.stable-image-inpaint-v1:0');
+
+// Erase — remove unwanted elements from an image
+$response = Image::of('')
+    ->attachments([$inputImage])
+    ->generate(provider: 'bedrock', model: 'stability.stable-image-erase-object-v1:0');
+
+// Remove background — isolate the subject
+$response = Image::of('')
+    ->attachments([$inputImage])
+    ->generate(provider: 'bedrock', model: 'stability.stable-image-remove-background-v1:0');
+
+// Search and replace — replace an object described in the prompt
+$response = Image::of('a cat')
+    ->attachments([$inputImage])
+    ->generate(provider: 'bedrock', model: 'stability.stable-image-search-replace-v1:0');
+
+// Style transfer — apply a style from the prompt
+$response = Image::of('Oil painting style')
+    ->attachments([$inputImage])
+    ->generate(provider: 'bedrock', model: 'stability.stable-style-transfer-v1:0');
+```
+
+Available Stability AI editing models (all available in `us-east-1`, `us-east-2`, `us-west-2`):
+
+| Model ID | Description |
+|----------|-------------|
+| `stability.stable-image-inpaint-v1:0` | Inpaint — fill/replace selected areas |
+| `stability.stable-outpaint-v1:0` | Outpaint — expand the image beyond its borders |
+| `stability.stable-image-erase-object-v1:0` | Erase — remove objects from an image |
+| `stability.stable-image-remove-background-v1:0` | Remove background |
+| `stability.stable-image-search-replace-v1:0` | Search and Replace — replace a described object |
+| `stability.stable-image-search-recolor-v1:0` | Search and Recolor — change an object's color |
+| `stability.stable-image-style-guide-v1:0` | Style Guide — apply a style reference image |
+| `stability.stable-style-transfer-v1:0` | Style Transfer — transfer an art style |
+| `stability.stable-image-control-sketch-v1:0` | Control Sketch — generate from a sketch |
+| `stability.stable-image-control-structure-v1:0` | Control Structure — follow a structural guide |
+| `stability.stable-creative-upscale-v1:0` | Creative Upscale — upscale with reimagining |
+| `stability.stable-conservative-upscale-v1:0` | Conservative Upscale — upscale preserving detail |
+| `stability.stable-fast-upscale-v1:0` | Fast Upscale — lightweight 4× upscaling |
+
 Amazon Nova Canvas is also supported but is being deprecated by AWS:
 
 ```php

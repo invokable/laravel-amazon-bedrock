@@ -6,6 +6,7 @@ namespace Revolution\Amazon\Bedrock\Ai\Concerns;
 
 use Illuminate\Support\Collection;
 use Laravel\Ai\Contracts\Providers\ImageProvider;
+use Laravel\Ai\Files\Base64Image;
 use Laravel\Ai\Files\Image as ImageFile;
 use Laravel\Ai\Responses\Data\GeneratedImage;
 use Laravel\Ai\Responses\Data\Meta;
@@ -18,7 +19,9 @@ trait GeneratesImages
      * Generate an image using Amazon Bedrock.
      *
      * Supports:
-     * - Stability AI models (stability.*): SD3.5 Large, Stable Image Core, Stable Image Ultra
+     * - Stability AI models (stability.*):
+     *   - Text-to-image: SD3.5 Large, Stable Image Core, Stable Image Ultra
+     *   - Image editing (with $attachments): Inpaint, Outpaint, Erase, Remove Background, etc.
      * - Amazon Nova Canvas (amazon.nova-canvas-v1:0) — deprecated, kept for backward compatibility
      *
      * @param  array<ImageFile>  $attachments
@@ -35,7 +38,7 @@ trait GeneratesImages
         ?int $timeout = null,
     ): ImageResponse {
         if ($this->isStabilityModel($model)) {
-            return $this->generateStabilityImage($provider, $model, $prompt, $size, $timeout);
+            return $this->generateStabilityImage($provider, $model, $prompt, $attachments, $size, $timeout);
         }
 
         return $this->generateNovaCanvasImage($provider, $model, $prompt, $size, $quality, $timeout);
@@ -48,20 +51,37 @@ trait GeneratesImages
 
     /**
      * Generate image using Stability AI API format.
-     * Request: {"prompt": "..."}
+     *
+     * Text-to-image (no attachments):
+     *   Request: {"prompt": "...", "aspect_ratio": "1:1"}
+     *
+     * Image editing (with attachments):
+     *   Request: {"prompt": "...", "image": "base64..."}
+     *   Supports models: inpaint, outpaint, erase, remove-background, search-replace, etc.
+     *
      * Response: {"seeds": [...], "finish_reasons": [...], "images": ["base64..."]}
+     *
+     * @param  array<ImageFile>  $attachments
      */
     protected function generateStabilityImage(
         ImageProvider $provider,
         string $model,
         string $prompt,
+        array $attachments = [],
         ?string $size = null,
         ?int $timeout = null,
     ): ImageResponse {
-        $body = [
-            'prompt' => $prompt,
-            'aspect_ratio' => $size ?? '1:1',
-        ];
+        if (! empty($attachments)) {
+            $body = [
+                'prompt' => $prompt,
+                'image' => $this->attachmentToBase64($attachments[0]),
+            ];
+        } else {
+            $body = [
+                'prompt' => $prompt,
+                'aspect_ratio' => $size ?? '1:1',
+            ];
+        }
 
         $response = $this->withErrorHandling(
             $provider->name(),
@@ -81,6 +101,18 @@ trait GeneratesImages
             new Usage,
             new Meta($provider->name(), $model),
         );
+    }
+
+    /**
+     * Convert an image attachment to a base64 string.
+     */
+    protected function attachmentToBase64(ImageFile $attachment): string
+    {
+        if ($attachment instanceof Base64Image) {
+            return $attachment->base64;
+        }
+
+        return base64_encode($attachment->content());
     }
 
     /**

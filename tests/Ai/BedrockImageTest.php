@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Http;
+use Laravel\Ai\Files\Image;
 use Laravel\Ai\Responses\Data\GeneratedImage;
 use Laravel\Ai\Responses\ImageResponse;
 use Revolution\Amazon\Bedrock\Ai\BedrockGateway;
@@ -406,6 +407,165 @@ describe('BedrockGateway generateImage (Stability AI)', function () {
         );
 
         expect($response)->toBeInstanceOf(ImageResponse::class);
+    });
+});
+
+describe('BedrockGateway generateImage (Stability AI image editing)', function () {
+    test('sends image field when Base64Image attachment provided (inpaint)', function () {
+        Http::fake([
+            'bedrock-runtime.us-east-1.amazonaws.com/*' => Http::response(fakeStabilityResponse()),
+        ]);
+
+        $attachment = Image::fromBase64(base64_encode('fake-input-image'));
+
+        $gateway = new BedrockGateway;
+        $gateway->generateImage(
+            provider: makeProvider(),
+            model: 'stability.stable-image-inpaint-v1:0',
+            prompt: 'Replace the background with mountains',
+            attachments: [$attachment],
+        );
+
+        Http::assertSent(function ($request) {
+            $body = json_decode($request->body(), true);
+
+            return isset($body['image'])
+                && $body['image'] === base64_encode('fake-input-image')
+                && $body['prompt'] === 'Replace the background with mountains'
+                && ! isset($body['aspect_ratio']);
+        });
+    });
+
+    test('sends image field when Base64Image attachment provided (erase)', function () {
+        Http::fake([
+            'bedrock-runtime.us-east-1.amazonaws.com/*' => Http::response(fakeStabilityResponse()),
+        ]);
+
+        $base64Content = base64_encode('my-image-bytes');
+        $attachment = Image::fromBase64($base64Content);
+
+        $gateway = new BedrockGateway;
+        $gateway->generateImage(
+            provider: makeProvider(),
+            model: 'stability.stable-image-erase-object-v1:0',
+            prompt: 'Remove the car',
+            attachments: [$attachment],
+        );
+
+        Http::assertSent(function ($request) use ($base64Content) {
+            $body = json_decode($request->body(), true);
+
+            return $body['image'] === $base64Content
+                && ! isset($body['aspect_ratio']);
+        });
+    });
+
+    test('sends image field for remove-background model', function () {
+        Http::fake([
+            'bedrock-runtime.us-east-1.amazonaws.com/*' => Http::response(fakeStabilityResponse()),
+        ]);
+
+        $attachment = Image::fromBase64(base64_encode('photo-data'));
+
+        $gateway = new BedrockGateway;
+        $response = $gateway->generateImage(
+            provider: makeProvider(),
+            model: 'stability.stable-image-remove-background-v1:0',
+            prompt: '',
+            attachments: [$attachment],
+        );
+
+        expect($response)->toBeInstanceOf(ImageResponse::class);
+        Http::assertSent(fn ($request) => isset(json_decode($request->body(), true)['image']));
+    });
+
+    test('sends image field for style transfer model', function () {
+        Http::fake([
+            'bedrock-runtime.us-east-1.amazonaws.com/*' => Http::response(fakeStabilityResponse()),
+        ]);
+
+        $attachment = Image::fromBase64(base64_encode('source-image'));
+
+        $gateway = new BedrockGateway;
+        $gateway->generateImage(
+            provider: makeProvider(),
+            model: 'stability.stable-style-transfer-v1:0',
+            prompt: 'Oil painting style',
+            attachments: [$attachment],
+        );
+
+        Http::assertSent(function ($request) {
+            $body = json_decode($request->body(), true);
+
+            return $body['prompt'] === 'Oil painting style'
+                && isset($body['image'])
+                && ! isset($body['aspect_ratio']);
+        });
+    });
+
+    test('uses only first attachment when multiple are provided', function () {
+        Http::fake([
+            'bedrock-runtime.us-east-1.amazonaws.com/*' => Http::response(fakeStabilityResponse()),
+        ]);
+
+        $first = Image::fromBase64(base64_encode('first-image'));
+        $second = Image::fromBase64(base64_encode('second-image'));
+
+        $gateway = new BedrockGateway;
+        $gateway->generateImage(
+            provider: makeProvider(),
+            model: 'stability.stable-image-inpaint-v1:0',
+            prompt: 'Edit image',
+            attachments: [$first, $second],
+        );
+
+        Http::assertSent(function ($request) {
+            $body = json_decode($request->body(), true);
+
+            return $body['image'] === base64_encode('first-image');
+        });
+    });
+
+    test('uses aspect_ratio when no attachments (text-to-image remains unchanged)', function () {
+        Http::fake([
+            'bedrock-runtime.us-west-2.amazonaws.com/*' => Http::response(fakeStabilityResponse()),
+        ]);
+
+        $gateway = new BedrockGateway;
+        $gateway->generateImage(
+            provider: makeProvider(['region' => 'us-west-2']),
+            model: 'stability.stable-image-core-v1:1',
+            prompt: 'A sunset',
+            attachments: [],
+            size: '3:2',
+        );
+
+        Http::assertSent(function ($request) {
+            $body = json_decode($request->body(), true);
+
+            return $body['aspect_ratio'] === '3:2'
+                && ! isset($body['image']);
+        });
+    });
+
+    test('returns ImageResponse for editing model', function () {
+        Http::fake([
+            'bedrock-runtime.us-east-1.amazonaws.com/*' => Http::response(fakeStabilityResponse()),
+        ]);
+
+        $attachment = Image::fromBase64(base64_encode('input-image'));
+
+        $gateway = new BedrockGateway;
+        $response = $gateway->generateImage(
+            provider: makeProvider(),
+            model: 'stability.stable-image-search-replace-v1:0',
+            prompt: 'Replace the dog with a cat',
+            attachments: [$attachment],
+        );
+
+        expect($response)->toBeInstanceOf(ImageResponse::class);
+        expect($response->images)->toHaveCount(1);
+        expect($response->firstImage())->toBeInstanceOf(GeneratedImage::class);
     });
 });
 
