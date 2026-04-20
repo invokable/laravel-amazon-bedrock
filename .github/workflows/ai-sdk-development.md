@@ -3,7 +3,7 @@ name: Laravel AI SDK Development
 description: Investigates and incrementally implements new AI SDK features for the Amazon Bedrock driver. Reads discussions/3 as memory, explores what Bedrock can support beyond text generation, implements one feature at a time, and records progress.
 
 on:
-  schedule: daily around 16:30 utc+9
+  schedule: weekly on wednesday around 18:00 utc+9
   workflow_dispatch:
 
 permissions:
@@ -14,7 +14,6 @@ permissions:
 
 engine:
   id: copilot
-  model: claude-sonnet-4.6
 
 checkout:
   ref: main
