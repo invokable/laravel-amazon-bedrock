@@ -284,6 +284,92 @@ $response = agent(
 
 Tool calls also work with streaming — the SDK automatically executes tool calls and continues the conversation until the model produces a final text response.
 
+### Conversation History
+
+Maintain multi-turn conversations by implementing the `Conversational` interface in your agent class. The `messages()` method should return the previous conversation messages, which will be automatically included in each prompt:
+
+```php
+<?php
+
+namespace App\Ai\Agents;
+
+use App\Models\ChatHistory;
+use Laravel\Ai\Contracts\Agent;
+use Laravel\Ai\Contracts\Conversational;
+use Laravel\Ai\Messages\Message;
+use Laravel\Ai\Promptable;
+
+class ChatAgent implements Agent, Conversational
+{
+    use Promptable;
+
+    public function __construct(public int $userId) {}
+
+    public function instructions(): string
+    {
+        return 'You are a helpful assistant.';
+    }
+
+    public function messages(): iterable
+    {
+        return ChatHistory::where('user_id', $this->userId)
+            ->latest()
+            ->limit(20)
+            ->get()
+            ->reverse()
+            ->map(fn ($m) => new Message($m->role, $m->content))
+            ->all();
+    }
+}
+```
+
+```php
+$response = (new ChatAgent(auth()->id()))->prompt('What did we discuss earlier?');
+```
+
+#### Automatic Conversation Storage with `RemembersConversations`
+
+For fully automatic conversation persistence (no manual `messages()` implementation needed), use the `RemembersConversations` trait. This requires the AI SDK database tables — run `php artisan vendor:publish --provider="Laravel\Ai\AiServiceProvider" && php artisan migrate` first.
+
+```php
+<?php
+
+namespace App\Ai\Agents;
+
+use Laravel\Ai\Concerns\RemembersConversations;
+use Laravel\Ai\Contracts\Agent;
+use Laravel\Ai\Contracts\Conversational;
+use Laravel\Ai\Promptable;
+
+class ChatAgent implements Agent, Conversational
+{
+    use Promptable, RemembersConversations;
+
+    public function instructions(): string
+    {
+        return 'You are a helpful assistant.';
+    }
+}
+```
+
+Start a new conversation for a user:
+
+```php
+$response = (new ChatAgent)->forUser($user)->prompt('Hello!');
+
+$conversationId = $response->conversationId;
+```
+
+Continue an existing conversation:
+
+```php
+$response = (new ChatAgent)
+    ->continue($conversationId, as: $user)
+    ->prompt('Tell me more about that.');
+```
+
+The Bedrock driver automatically includes conversation history in the Anthropic Messages API and Bedrock Converse API requests, so all supported models benefit from multi-turn conversation context.
+
 ### Structured Output
 
 Get structured (typed) responses from Claude using the `HasStructuredOutput` interface:
