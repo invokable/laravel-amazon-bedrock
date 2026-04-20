@@ -20,7 +20,7 @@ Prismにバグがあったので作ったパッケージだったけどその後
 - [x] Imageで使っている`amazon.nova-canvas-v1:0`は廃止が決定しているので別のモデルに変更。とはいえ`amazon.titan-image-generator-v2:0`も廃止なので代わりのモデルは [Stability AI](https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-stability-diffusion.html) のいくつかしかないかも。 [Model lifecycle](https://docs.aws.amazon.com/bedrock/latest/userguide/model-lifecycle.html)
 - [x] Stable Image Coreでの画像生成は成功。`aspect_ratio`でsize指定もできたので追加済み。Stability AI Image Servicesへの対応は`$attachments`があるのでプロンプトと画像を渡して画像編集も可能かもしれないけど要調査。https://docs.aws.amazon.com/bedrock/latest/userguide/stable-image-services.html
 - [x] 実装できそうな機能はすべて実装完了。
-- [ ] 会話履歴はすでに対応できてそうなので念のためREADMEの構造化の上に説明を追加。
+- [x] 会話履歴はすでに対応できてそうなので念のためREADMEの構造化の上に説明を追加。
 - 機能追加のタスクがなくなったら既存コードのリファクタリングやテスト追加やLaravel AI SDKのアップデート対応を行う。Laravel AI SDKはまだv0.x、composerはv1.0前では+0.1でもメジャーバージョンアップ扱いなのでまだまだ破壊的変更が入る可能性がある。
 
 GitHub Agentic Workflowsで少しずつ実行。
