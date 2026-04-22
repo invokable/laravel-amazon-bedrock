@@ -6,13 +6,16 @@ use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Ai\AnonymousAgent;
 use Laravel\Ai\Audio;
 use Laravel\Ai\Embeddings;
+use Laravel\Ai\Image;
 use Laravel\Ai\Prompts\AgentPrompt;
 use Laravel\Ai\Prompts\AudioPrompt;
 use Laravel\Ai\Prompts\EmbeddingsPrompt;
+use Laravel\Ai\Prompts\ImagePrompt;
 use Laravel\Ai\Prompts\RerankingPrompt;
 use Laravel\Ai\Prompts\TranscriptionPrompt;
 use Laravel\Ai\Reranking;
 use Laravel\Ai\Responses\AudioResponse;
+use Laravel\Ai\Responses\ImageResponse;
 use Laravel\Ai\Responses\RerankingResponse;
 use Laravel\Ai\Responses\TranscriptionResponse;
 use Laravel\Ai\StructuredAnonymousAgent;
@@ -113,6 +116,33 @@ describe('Laravel AI SDK', function () {
 
         Transcription::assertGenerated(function (TranscriptionPrompt $prompt) {
             return $prompt->language === 'en';
+        });
+    });
+
+    test('Image', function () {
+        Image::fake();
+
+        $response = Image::of('A beautiful mountain landscape at sunset.')
+            ->generate(provider: Bedrock::KEY);
+
+        expect($response)->toBeInstanceOf(ImageResponse::class);
+
+        Image::assertGenerated(function (ImagePrompt $prompt) {
+            return $prompt->contains('mountain landscape');
+        });
+    });
+
+    test('Image with size', function () {
+        Image::fake();
+
+        $response = Image::of('A futuristic city skyline.')
+            ->size('16:9')
+            ->generate(provider: Bedrock::KEY);
+
+        expect($response)->toBeInstanceOf(ImageResponse::class);
+
+        Image::assertGenerated(function (ImagePrompt $prompt) {
+            return $prompt->size === '16:9' && $prompt->contains('futuristic city');
         });
     });
 });
