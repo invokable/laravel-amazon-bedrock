@@ -39,22 +39,22 @@ php artisan vendor:publish --provider="Laravel\Ai\AiServiceProvider"
 
 ## Configuration
 
-Add the `bedrock` driver to `config/ai.php`:
+Add the `amazon-bedrock` driver to `config/ai.php`:
 
 ### Option 1: Bedrock API Key
 
 ```php
 // config/ai.php
-'default' => 'bedrock',
-'default_for_images' => 'bedrock',
-'default_for_audio' => 'bedrock',
-'default_for_embeddings' => 'bedrock',
-'default_for_reranking' => 'bedrock',
-'default_for_transcription' => 'bedrock',
+'default' => 'amazon-bedrock',
+'default_for_images' => 'amazon-bedrock',
+'default_for_audio' => 'amazon-bedrock',
+'default_for_embeddings' => 'amazon-bedrock',
+'default_for_reranking' => 'amazon-bedrock',
+'default_for_transcription' => 'amazon-bedrock',
 
 'providers' => [
-    'bedrock' => [
-        'driver' => 'bedrock',
+    'amazon-bedrock' => [
+        'driver' => 'amazon-bedrock',
         'key'    => env('AWS_BEDROCK_API_KEY', ''),
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
@@ -78,8 +78,8 @@ Use AWS access key and secret key with [Signature Version 4](https://docs.aws.am
 ```php
 // config/ai.php
 'providers' => [
-    'bedrock' => [
-        'driver' => 'bedrock',
+    'amazon-bedrock' => [
+        'driver' => 'amazon-bedrock',
         'key'    => env('AWS_ACCESS_KEY_ID'),
         'secret' => env('AWS_SECRET_ACCESS_KEY'),
         'token'  => env('AWS_SESSION_TOKEN'),  // optional, for temporary credentials
@@ -102,8 +102,8 @@ For EC2 instances, ECS tasks, Lambda functions, or any environment with IAM role
 ```php
 // config/ai.php
 'providers' => [
-    'bedrock' => [
-        'driver' => 'bedrock',
+    'amazon-bedrock' => [
+        'driver' => 'amazon-bedrock',
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 ],
@@ -539,9 +539,10 @@ Generate images using Stability AI models (default) or Amazon Nova Canvas:
 
 ```php
 use Laravel\Ai\Image;
+use Revolution\Amazon\Bedrock\Bedrock;
 
 // Uses Stability AI Stable Image Core by default
-$response = Image::of('A cute steampunk robot')->generate(provider: 'bedrock');
+$response = Image::of('A cute steampunk robot')->generate(provider: Bedrock::KEY);
 
 // Get the first image
 $image = $response->firstImage();
@@ -560,15 +561,15 @@ Available Stability AI models (all require `us-west-2` region):
 ```php
 // Stable Image Core — fast and affordable (default)
 $response = Image::of('A landscape')
-    ->generate(provider: 'bedrock', model: 'stability.stable-image-core-v1:1');
+    ->generate(provider: Bedrock::KEY, model: 'stability.stable-image-core-v1:1');
 
 // Stable Diffusion 3.5 Large — high quality, high quantity
 $response = Image::of('A portrait')
-    ->generate(provider: 'bedrock', model: 'stability.sd3-5-large-v1:0');
+    ->generate(provider: Bedrock::KEY, model: 'stability.sd3-5-large-v1:0');
 
 // Stable Image Ultra — ultra-realistic, highest quality
 $response = Image::of('A luxury product')
-    ->generate(provider: 'bedrock', model: 'stability.stable-image-ultra-v1:1');
+    ->generate(provider: Bedrock::KEY, model: 'stability.stable-image-ultra-v1:1');
 ```
 
 > [!NOTE]
@@ -580,33 +581,34 @@ Stability AI Image Services editing models are also supported via the `attachmen
 
 ```php
 use Laravel\Ai\Files\Image as ImageFile;
+use Revolution\Amazon\Bedrock\Bedrock;
 
 $inputImage = ImageFile::fromPath('/path/to/photo.jpg');
 
 // Inpaint — fill in or replace areas using a mask or alpha channel
 $response = Image::of('Replace the background with a forest')
     ->attachments([$inputImage])
-    ->generate(provider: 'bedrock', model: 'stability.stable-image-inpaint-v1:0');
+    ->generate(provider: Bedrock::KEY, model: 'stability.stable-image-inpaint-v1:0');
 
 // Erase — remove unwanted elements from an image
 $response = Image::of('')
     ->attachments([$inputImage])
-    ->generate(provider: 'bedrock', model: 'stability.stable-image-erase-object-v1:0');
+    ->generate(provider: Bedrock::KEY, model: 'stability.stable-image-erase-object-v1:0');
 
 // Remove background — isolate the subject
 $response = Image::of('')
     ->attachments([$inputImage])
-    ->generate(provider: 'bedrock', model: 'stability.stable-image-remove-background-v1:0');
+    ->generate(provider: Bedrock::KEY, model: 'stability.stable-image-remove-background-v1:0');
 
 // Search and replace — replace an object described in the prompt
 $response = Image::of('a cat')
     ->attachments([$inputImage])
-    ->generate(provider: 'bedrock', model: 'stability.stable-image-search-replace-v1:0');
+    ->generate(provider: Bedrock::KEY, model: 'stability.stable-image-search-replace-v1:0');
 
 // Style transfer — apply a style from the prompt
 $response = Image::of('Oil painting style')
     ->attachments([$inputImage])
-    ->generate(provider: 'bedrock', model: 'stability.stable-style-transfer-v1:0');
+    ->generate(provider: Bedrock::KEY, model: 'stability.stable-style-transfer-v1:0');
 ```
 
 Available Stability AI editing models (all available in `us-east-1`, `us-east-2`, `us-west-2`):
@@ -634,7 +636,7 @@ Amazon Nova Canvas is also supported but is being deprecated by AWS:
 $response = Image::of('A sunset')
     ->size('3:2')           // '1:1', '3:2', or '2:3'
     ->quality('high')       // 'low', 'medium', or 'high' (Nova Canvas only)
-    ->generate(provider: 'bedrock', model: 'amazon.nova-canvas-v1:0');
+    ->generate(provider: Bedrock::KEY, model: 'amazon.nova-canvas-v1:0');
 ```
 
 ## Audio (TTS)
@@ -643,8 +645,9 @@ Generate speech audio from text using [Amazon Polly](https://docs.aws.amazon.com
 
 ```php
 use Laravel\Ai\Audio;
+use Revolution\Amazon\Bedrock\Bedrock;
 
-$response = Audio::of('I love coding with Laravel.')->generate(provider: 'bedrock');
+$response = Audio::of('I love coding with Laravel.')->generate(provider: Bedrock::KEY);
 
 $rawContent = (string) $response;
 ```
@@ -658,7 +661,7 @@ $response = Audio::of('I love coding with Laravel.')
 
 $response = Audio::of('I love coding with Laravel.')
     ->male()
-    ->generate(provider: 'bedrock');
+    ->generate(provider: Bedrock::KEY);
 ```
 
 Use a specific [Polly voice](https://docs.aws.amazon.com/polly/latest/dg/voicelist.html):
@@ -666,13 +669,13 @@ Use a specific [Polly voice](https://docs.aws.amazon.com/polly/latest/dg/voiceli
 ```php
 $response = Audio::of('I love coding with Laravel.')
     ->voice('Joanna')
-    ->generate(provider: 'bedrock');
+    ->generate(provider: Bedrock::KEY);
 ```
 
 Store the generated audio:
 
 ```php
-$response = Audio::of('I love coding with Laravel.')->generate(provider: 'bedrock');
+$response = Audio::of('I love coding with Laravel.')->generate(provider: Bedrock::KEY);
 
 $path = $response->store();
 $path = $response->storeAs('audio.mp3');
@@ -683,7 +686,7 @@ Specify a different engine (model):
 ```php
 // Available engines: generative (default), neural, long-form, standard
 $response = Audio::of('I love coding with Laravel.')
-    ->generate(provider: 'bedrock', model: 'neural');
+    ->generate(provider: Bedrock::KEY, model: 'neural');
 ```
 
 **Default voices:** `default-female` → Ruth, `default-male` → Matthew (both support the generative engine).
@@ -697,9 +700,10 @@ Transcribe audio to text using [Amazon Nova 2 Lite](https://docs.aws.amazon.com/
 
 ```php
 use Laravel\Ai\Transcription;
+use Revolution\Amazon\Bedrock\Bedrock;
 
 $response = Transcription::of('base64-encoded-audio-data')
-    ->generate(provider: 'bedrock');
+    ->generate(provider: Bedrock::KEY);
 
 echo $response->text;
 ```
@@ -708,7 +712,7 @@ From a file path:
 
 ```php
 $response = Transcription::fromPath('/path/to/audio.mp3')
-    ->generate(provider: 'bedrock');
+    ->generate(provider: Bedrock::KEY);
 ```
 
 Specify language and enable speaker diarization:
@@ -717,14 +721,14 @@ Specify language and enable speaker diarization:
 $response = Transcription::of($audioData)
     ->language('en')
     ->diarize()
-    ->generate(provider: 'bedrock');
+    ->generate(provider: Bedrock::KEY);
 ```
 
 Use a custom model:
 
 ```php
 $response = Transcription::of($audioData)
-    ->generate(provider: 'bedrock', model: 'us.amazon.nova-2-pro-v1:0');
+    ->generate(provider: Bedrock::KEY, model: 'us.amazon.nova-2-pro-v1:0');
 ```
 
 **Supported audio formats:** MP3, WAV, FLAC, OGG, WebM, AAC, M4A, Opus, MKA.
@@ -738,8 +742,9 @@ Generate vector embeddings using Amazon Titan Embeddings V2:
 
 ```php
 use Laravel\Ai\Embeddings;
+use Revolution\Amazon\Bedrock\Bedrock;
 
-$response = Embeddings::for(['Hello world', 'Foo bar'])->generate(provider: 'bedrock');
+$response = Embeddings::for(['Hello world', 'Foo bar'])->generate(provider: Bedrock::KEY);
 
 // Access first embedding vector
 $vector = $response->first();
@@ -755,7 +760,7 @@ echo $response->tokens; // total token count
 Specify custom dimensions (256, 512, or 1024 for Titan Embeddings V2):
 
 ```php
-$response = Embeddings::for(['Hello world'])->dimensions(512)->generate(provider: 'bedrock');
+$response = Embeddings::for(['Hello world'])->dimensions(512)->generate(provider: Bedrock::KEY);
 ```
 
 Use a custom model:
@@ -763,7 +768,7 @@ Use a custom model:
 ```php
 $response = Embeddings::for(['Hello world'])
     ->dimensions(1024)
-    ->generate(provider: 'bedrock', model: 'amazon.titan-embed-text-v2:0');
+    ->generate(provider: Bedrock::KEY, model: 'amazon.titan-embed-text-v2:0');
 ```
 
 ### Cohere Embed Models
@@ -774,17 +779,17 @@ Cohere Embed models are automatically detected and use a batch API — all input
 // Cohere Embed English V3
 $response = Embeddings::for(['Hello world', 'Foo bar'])
     ->dimensions(1024)
-    ->generate(provider: 'bedrock', model: 'cohere.embed-english-v3');
+    ->generate(provider: Bedrock::KEY, model: 'cohere.embed-english-v3');
 
 // Cohere Embed Multilingual V3
 $response = Embeddings::for(['Hello', 'こんにちは'])
     ->dimensions(1024)
-    ->generate(provider: 'bedrock', model: 'cohere.embed-multilingual-v3');
+    ->generate(provider: Bedrock::KEY, model: 'cohere.embed-multilingual-v3');
 
 // Cohere Embed V4 (supports configurable output dimensions 256–1536)
 $response = Embeddings::for(['Hello world'])
     ->dimensions(512)
-    ->generate(provider: 'bedrock', model: 'cohere.embed-v4');
+    ->generate(provider: Bedrock::KEY, model: 'cohere.embed-v4');
 ```
 
 > **Note:** Cohere Embed models do not return token counts — `$response->tokens` will always be `0`. Titan Embeddings uses one HTTP request per input, while Cohere models batch all inputs into a single request.
@@ -795,12 +800,13 @@ Rerank documents by relevance to a query using Cohere Rerank 3.5 or Amazon Reran
 
 ```php
 use Laravel\Ai\Reranking;
+use Revolution\Amazon\Bedrock\Bedrock;
 
 $response = Reranking::of([
     'Laravel is a PHP web framework.',
     'Python is a programming language.',
     'Laravel provides elegant syntax for web development.',
-])->rerank(query: 'What is Laravel?', provider: 'bedrock');
+])->rerank(query: 'What is Laravel?', provider: Bedrock::KEY);
 
 // Get the top-ranked document
 echo $response->first()->document; // "Laravel is a PHP web framework."
@@ -814,14 +820,14 @@ foreach ($response as $result) {
 // Limit the number of results
 $response = Reranking::of([...])
     ->limit(2)
-    ->rerank(query: 'What is Laravel?', provider: 'bedrock');
+    ->rerank(query: 'What is Laravel?', provider: Bedrock::KEY);
 ```
 
 Use a custom model:
 
 ```php
 $response = Reranking::of([...])
-    ->rerank(query: 'Search query', provider: 'bedrock', model: 'amazon.rerank-v1:0');
+    ->rerank(query: 'Search query', provider: Bedrock::KEY, model: 'amazon.rerank-v1:0');
 ```
 
 **Note:** The reranking API uses the `bedrock-agent-runtime` endpoint (not `bedrock-runtime`). Amazon Rerank 1.0 is not available in `us-east-1` — use Cohere Rerank 3.5 in that region.

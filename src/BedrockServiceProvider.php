@@ -14,7 +14,7 @@ class BedrockServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
-        Ai::extend('bedrock', function (Application $app, array $config) {
+        Ai::extend(Bedrock::KEY, function (Application $app, array $config) {
             return new BedrockProvider(
                 $config,
                 $this->app->make(Dispatcher::class),
