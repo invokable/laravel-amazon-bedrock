@@ -6,8 +6,8 @@ namespace Tests;
 
 use Laravel\Ai\AiServiceProvider;
 use Orchestra\Testbench\TestCase as BaseTestCase;
-use Revolution\Amazon\Bedrock\BedrockServiceProvider;
 use Revolution\Amazon\Bedrock\Bedrock;
+use Revolution\Amazon\Bedrock\BedrockServiceProvider;
 
 abstract class TestCase extends BaseTestCase
 {
