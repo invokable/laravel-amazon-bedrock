@@ -136,12 +136,12 @@ src/Ai/
     └── HandlesTextStreaming.php
 ```
 
-The driver is registered in `BedrockServiceProvider.php` via `Ai::extend('bedrock', ...)`.
+The driver is registered in `BedrockServiceProvider.php` via `Ai::extend('amazon-bedrock', ...)`.
 
 Config comes from `config/ai.php`:
 ```php
-'bedrock' => [
-    'driver' => 'bedrock',
+'amazon-bedrock' => [
+    'driver' => 'amazon-bedrock',
     'key' => env('AWS_BEDROCK_API_KEY'),
     'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
 ],

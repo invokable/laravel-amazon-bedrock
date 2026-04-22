@@ -6,5 +6,5 @@ namespace Revolution\Amazon\Bedrock;
 
 final readonly class Bedrock
 {
-    public const string KEY = 'bedrock';
+    public const string KEY = 'amazon-bedrock';
 }
