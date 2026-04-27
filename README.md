@@ -4,6 +4,8 @@
 [![Code Coverage](https://qlty.sh/gh/invokable/projects/laravel-amazon-bedrock/coverage.svg)](https://qlty.sh/gh/invokable/projects/laravel-amazon-bedrock)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/invokable/laravel-amazon-bedrock)
 
+Docs: [English](https://kawax.biz/en/packages/laravel-amazon-bedrock) [Japanese](https://kawax.biz/jp/packages/laravel-amazon-bedrock)
+
 ## Overview
 
 An Amazon Bedrock driver for the [Laravel AI SDK](https://laravel.com/docs/ai-sdk), enabling text generation, streaming, tool use (function calling), structured output, embeddings, image generation, audio (TTS), transcription (STT), and reranking via models on AWS Bedrock.
