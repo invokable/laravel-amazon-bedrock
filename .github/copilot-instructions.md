@@ -23,7 +23,7 @@ Prismにバグがあったので作ったパッケージだったけどその後
 - [x] 会話履歴はすでに対応できてそうなので念のためREADMEの構造化の上に説明を追加。
 - [x] 公式がBedrockの一部機能に対応したのでKEYを`amazon-bedrock`に変更。全機能には対応してないのでこのパッケージは残す。Bedrock API keyで使える機能しか対応してないようなのでプルリクで貢献しようとしてもおそらくマージされない。別パッケージで継続。
 - [x] 公式のパッチバージョンの変化でテストが失敗しているので修正が必要。
-- [x] Converse APIはテキスト生成時にファイルの添付に対応している。`->prompt('', attachments: [])`からUserMessageのattachmentsに渡されている。今のコードは公式のAnthropicの実装を参考にしているので`mapConverseUserMessage()`を公式の`mapUserMessage()`のようにすればいいはず。ファイル名などBedrock特有の制限がある。TranscriptionsのAudioBlockと似たパターン。`audio` `image` `document` `video`に対応している。 https://docs.aws.amazon.com/bedrock/latest/userguide/conversation-inference-call.html 。`InvokeModel`でも対応している。マルチモーダルに対応してるかはモデル次第。
+- [x] Converse APIはテキスト生成時にファイルの添付に対応している。`->prompt('', attachments: [])`からUserMessageのattachmentsに渡されている。今のコードは公式のAnthropicの実装を参考にしているので`mapConverseUserMessage()`を公式の`mapUserMessage()`のようにすればいいはず。ファイル名などBedrock特有の制限がある。TranscriptionsのAudioBlockと似たパターン。`audio` `image` `document` `video`に対応している。READMEで非対応にしていたFilesはこの添付機能が一般的な用途でサーバーにアップロードは一部プロバイダーのみの機能。
 - [x] InvokeModelよりConverse APIの方が新しいのでAnthropicもConverse APIに変更して統一。
 - [ ] Transcriptionsは `workbench/routes/console.php` で試したら動かない。AudioBlockに対応してるモデルがもうない。Amazon Transcribeを使うのがもう主流。一旦非対応に戻す。
 - [ ] Amazon Transcribeが使えるかは以前に検証してるけど再度検証。
