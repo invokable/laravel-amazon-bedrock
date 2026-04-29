@@ -12,7 +12,7 @@ An Amazon Bedrock driver for the [Laravel AI SDK](https://laravel.com/docs/ai-sd
 
 | Feature            | API key | Supported Models                                                                                             |
 |--------------------|---------|--------------------------------------------------------------------------------------------------------------|
-| Text, Streaming    | ✅       | Anthropic Claude (via Invoke), Amazon Nova, mostly Bedrock models (via Converse API)                         |
+| Text, Streaming    | ✅       | Anthropic Claude, Amazon Nova, mostly Bedrock models (via Converse API)                                      |
 | Tool Use           | ✅       |                                                                                                              |
 | Structured Output  | ✅       |                                                                                                              |
 | Images             | ✅       | Stability AI models (default), Amazon Nova Canvas (deprecated).                                              |
