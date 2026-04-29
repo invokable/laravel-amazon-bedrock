@@ -17,6 +17,29 @@ use Laravel\Ai\Files\ProviderImage;
 
 trait MapsConverseAttachments
 {
+    protected const array FILENAME_FORMATS = [
+        'csv',
+        'doc',
+        'docx',
+        'flv',
+        'gif',
+        'html',
+        'jpeg',
+        'md',
+        'mkv',
+        'mov',
+        'mp4',
+        'mpeg',
+        'mpg',
+        'pdf',
+        'png',
+        'txt',
+        'webm',
+        'wmv',
+        'xls',
+        'xlsx',
+    ];
+
     /**
      * Map the given Laravel attachments to Bedrock Converse content blocks.
      */
@@ -161,19 +184,26 @@ trait MapsConverseAttachments
     {
         $extension = Str::of((string) $name)->afterLast('.')->lower()->toString();
 
-        return match ($extension) {
-            'jpg' => 'jpeg',
-            '3gp' => 'three_gp',
-            'csv', 'doc', 'docx', 'flv', 'gif', 'html', 'jpeg', 'md', 'mkv', 'mov', 'mp4', 'mpeg', 'mpg', 'pdf', 'png', 'txt', 'webm', 'wmv', 'xls', 'xlsx' => $extension,
-            default => $default,
-        };
+        if ($extension === 'jpg') {
+            return 'jpeg';
+        }
+
+        if ($extension === '3gp') {
+            return 'three_gp';
+        }
+
+        if (in_array($extension, self::FILENAME_FORMATS, true)) {
+            return $extension;
+        }
+
+        return $default;
     }
 
     protected function converseDocumentName(?string $name): string
     {
         $name = Str::of($name ?: 'Document')
             ->beforeLast('.')
-            ->replaceMatches('/[^A-Za-z0-9\s\-\(\)\[\]]/', ' ')
+            ->replaceMatches('/[^A-Za-z0-9\s()\[\]-]/', ' ')
             ->squish()
             ->limit(200, '')
             ->toString();
