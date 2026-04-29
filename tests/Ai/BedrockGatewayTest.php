@@ -8,10 +8,6 @@ use Laravel\Ai\Enums\Lab;
 use Laravel\Ai\Gateway\TextGenerationOptions;
 use Laravel\Ai\Messages\Message;
 use Laravel\Ai\Responses\TextResponse;
-use Laravel\Ai\Streaming\Events\StreamStart;
-use Laravel\Ai\Streaming\Events\TextDelta;
-use Laravel\Ai\Streaming\Events\TextEnd;
-use Laravel\Ai\Streaming\Events\TextStart;
 use Revolution\Amazon\Bedrock\Ai\BedrockGateway;
 use Revolution\Amazon\Bedrock\Ai\BedrockProvider;
 
@@ -50,19 +46,20 @@ function makeOptionsWithProviderOptions(array $providerOptions, ?int $maxTokens 
 function fakeBedrockResponse(string $text = 'Hello!', array $usage = []): array
 {
     return [
-        'id' => 'msg_test123',
-        'type' => 'message',
-        'role' => 'assistant',
-        'model' => 'anthropic.claude-3-haiku-20240307-v1:0',
-        'content' => [
-            ['type' => 'text', 'text' => $text],
+        'output' => [
+            'message' => [
+                'role' => 'assistant',
+                'content' => [
+                    ['text' => $text],
+                ],
+            ],
         ],
-        'stop_reason' => 'end_turn',
+        'stopReason' => 'end_turn',
         'usage' => array_merge([
-            'input_tokens' => 10,
-            'output_tokens' => 20,
-            'cache_creation_input_tokens' => 5,
-            'cache_read_input_tokens' => 2,
+            'inputTokens' => 10,
+            'outputTokens' => 20,
+            'cacheWriteInputTokens' => 5,
+            'cacheReadInputTokens' => 2,
         ], $usage),
     ];
 }
@@ -106,10 +103,10 @@ describe('BedrockGateway generateText', function () {
         Http::fake([
             'bedrock-runtime.us-east-1.amazonaws.com/*' => Http::response(
                 fakeBedrockResponse(usage: [
-                    'input_tokens' => 15,
-                    'output_tokens' => 30,
-                    'cache_creation_input_tokens' => 8,
-                    'cache_read_input_tokens' => 3,
+                    'inputTokens' => 15,
+                    'outputTokens' => 30,
+                    'cacheWriteInputTokens' => 8,
+                    'cacheReadInputTokens' => 3,
                 ]),
             ),
         ]);
@@ -145,7 +142,7 @@ describe('BedrockGateway generateText', function () {
         expect($response->meta->model)->toBe('anthropic.claude-3-haiku-20240307-v1:0');
     });
 
-    test('sends request to correct bedrock api url', function () {
+    test('sends request to correct bedrock converse api url', function () {
         Http::fake([
             'bedrock-runtime.us-east-1.amazonaws.com/*' => Http::response(fakeBedrockResponse()),
         ]);
@@ -161,7 +158,7 @@ describe('BedrockGateway generateText', function () {
         Http::assertSent(function ($request) {
             return str_contains($request->url(), 'bedrock-runtime.us-east-1.amazonaws.com')
                 && str_contains($request->url(), 'anthropic.claude-3-haiku-20240307-v1:0')
-                && str_contains($request->url(), '/invoke');
+                && str_contains($request->url(), '/converse');
         });
     });
 
@@ -183,7 +180,7 @@ describe('BedrockGateway generateText', function () {
         });
     });
 
-    test('sends instructions as system prompt with cache_control', function () {
+    test('sends instructions as system prompt with cachePoint', function () {
         Http::fake([
             'bedrock-runtime.us-east-1.amazonaws.com/*' => Http::response(fakeBedrockResponse()),
         ]);
@@ -197,9 +194,8 @@ describe('BedrockGateway generateText', function () {
         );
 
         Http::assertSent(function ($request) {
-            return $request['system'][0]['type'] === 'text'
-                && $request['system'][0]['text'] === 'You are a helpful assistant.'
-                && $request['system'][0]['cache_control']['type'] === 'ephemeral';
+            return $request['system'][0]['text'] === 'You are a helpful assistant.'
+                && $request['system'][1]['cachePoint']['type'] === 'default';
         });
     });
 
@@ -263,7 +259,7 @@ describe('BedrockGateway generateText', function () {
         );
 
         Http::assertSent(function ($request) {
-            return $request['max_tokens'] === 512;
+            return $request['inferenceConfig']['maxTokens'] === 512;
         });
     });
 
@@ -284,7 +280,7 @@ describe('BedrockGateway generateText', function () {
         );
 
         Http::assertSent(function ($request) {
-            return $request['temperature'] === 0.7;
+            return $request['inferenceConfig']['temperature'] === 0.7;
         });
     });
 
@@ -302,11 +298,11 @@ describe('BedrockGateway generateText', function () {
         );
 
         Http::assertSent(function ($request) {
-            return $request['max_tokens'] === 1024;
+            return $request['inferenceConfig']['maxTokens'] === 1024;
         });
     });
 
-    test('sends default anthropic_version when not specified', function () {
+    test('does not send anthropic_version', function () {
         Http::fake([
             'bedrock-runtime.us-east-1.amazonaws.com/*' => Http::response(fakeBedrockResponse()),
         ]);
@@ -320,11 +316,11 @@ describe('BedrockGateway generateText', function () {
         );
 
         Http::assertSent(function ($request) {
-            return $request['anthropic_version'] === 'bedrock-2023-05-31';
+            return ! isset($request['anthropic_version']);
         });
     });
 
-    test('uses anthropic_version from providerOptions', function () {
+    test('ignores anthropic_version from providerOptions', function () {
         Http::fake([
             'bedrock-runtime.us-east-1.amazonaws.com/*' => Http::response(fakeBedrockResponse()),
         ]);
@@ -343,11 +339,12 @@ describe('BedrockGateway generateText', function () {
         );
 
         Http::assertSent(function ($request) {
-            return $request['anthropic_version'] === 'custom-2024-01-01';
+            return ! isset($request['anthropic_version'])
+                && ! isset($request['additionalModelRequestFields']['anthropic_version']);
         });
     });
 
-    test('uses anthropic_version from provider config as fallback', function () {
+    test('ignores anthropic_version from provider config', function () {
         Http::fake([
             'bedrock-runtime.us-east-1.amazonaws.com/*' => Http::response(fakeBedrockResponse()),
         ]);
@@ -361,7 +358,7 @@ describe('BedrockGateway generateText', function () {
         );
 
         Http::assertSent(function ($request) {
-            return $request['anthropic_version'] === 'bedrock-2023-05-31';
+            return ! isset($request['anthropic_version']);
         });
     });
 
@@ -385,8 +382,8 @@ describe('BedrockGateway generateText', function () {
         );
 
         Http::assertSent(function ($request) {
-            return $request['top_k'] === 40
-                && $request['top_p'] === 0.9;
+            return $request['additionalModelRequestFields']['top_k'] === 40
+                && $request['additionalModelRequestFields']['top_p'] === 0.9;
         });
     });
 
@@ -406,239 +403,6 @@ describe('BedrockGateway generateText', function () {
         Http::assertSent(function ($request) {
             return str_contains($request->url(), 'bedrock-runtime.ap-northeast-1.amazonaws.com');
         });
-    });
-});
-
-describe('BedrockGateway streamText event mapping', function () {
-    test('maps message_start to StreamStart', function () {
-        $gateway = new class extends BedrockGateway
-        {
-            public function mapEvent(string $invocationId, array $event, string $provider, string $model): mixed
-            {
-                $events = iterator_to_array($this->processTextStreamFromEvents($invocationId, $provider, $model, [$event]));
-
-                return $events[0] ?? null;
-            }
-
-            protected function processTextStreamFromEvents(string $invocationId, string $provider, string $model, array $events): Generator
-            {
-                // Simulate provider for processTextStream
-                foreach ($events as $event) {
-                    $type = $event['type'] ?? '';
-
-                    if ($type === 'message_start') {
-                        yield (new StreamStart(
-                            $this->generateEventId(),
-                            $provider,
-                            $event['message']['model'] ?? $model,
-                            time(),
-                        ))->withInvocationId($invocationId);
-                    }
-                }
-            }
-        };
-
-        $event = $gateway->mapEvent('inv-1', [
-            'type' => 'message_start',
-            'message' => ['model' => 'claude'],
-        ], 'bedrock', 'claude');
-
-        expect($event)->toBeInstanceOf(StreamStart::class);
-    });
-
-    test('maps content_block_start to TextStart', function () {
-        $gateway = new class extends BedrockGateway
-        {
-            public function testMapEvent(string $invocationId, array $events): array
-            {
-                $provider = makeProvider();
-                $generator = $this->processTextStreamFromArray($invocationId, $provider, 'claude', $events);
-
-                return iterator_to_array($generator);
-            }
-
-            protected function processTextStreamFromArray(string $invocationId, $provider, string $model, array $rawEvents): Generator
-            {
-                $messageId = $this->generateEventId();
-                $streamStartEmitted = false;
-                $textStartEmitted = false;
-
-                foreach ($rawEvents as $event) {
-                    $type = $event['type'] ?? '';
-
-                    if ($type === 'message_start' && ! $streamStartEmitted) {
-                        $streamStartEmitted = true;
-
-                        yield (new StreamStart(
-                            $this->generateEventId(),
-                            $provider->name(),
-                            $model,
-                            time(),
-                        ))->withInvocationId($invocationId);
-
-                        continue;
-                    }
-
-                    if ($type === 'content_block_start') {
-                        if (! $textStartEmitted) {
-                            $textStartEmitted = true;
-
-                            yield (new TextStart(
-                                $this->generateEventId(),
-                                $messageId,
-                                time(),
-                            ))->withInvocationId($invocationId);
-                        }
-
-                        continue;
-                    }
-
-                    if ($type === 'content_block_delta' && ($event['delta']['type'] ?? '') === 'text_delta') {
-                        yield (new TextDelta(
-                            $this->generateEventId(),
-                            $messageId,
-                            $event['delta']['text'] ?? '',
-                            time(),
-                        ))->withInvocationId($invocationId);
-
-                        continue;
-                    }
-
-                    if ($type === 'content_block_stop' && $textStartEmitted) {
-                        $textStartEmitted = false;
-
-                        yield (new TextEnd(
-                            $this->generateEventId(),
-                            $messageId,
-                            time(),
-                        ))->withInvocationId($invocationId);
-
-                        continue;
-                    }
-                }
-            }
-        };
-
-        $events = $gateway->testMapEvent('inv-1', [
-            ['type' => 'message_start', 'message' => ['model' => 'claude']],
-            ['type' => 'content_block_start', 'content_block' => ['type' => 'text']],
-        ]);
-
-        expect($events)->toHaveCount(2);
-        expect($events[0])->toBeInstanceOf(StreamStart::class);
-        expect($events[1])->toBeInstanceOf(TextStart::class);
-    });
-
-    test('maps content_block_delta to TextDelta with text', function () {
-        $gateway = new class extends BedrockGateway
-        {
-            public function testMapEvent(string $invocationId, array $events): array
-            {
-                $provider = makeProvider();
-                $generator = $this->processTextStreamFromArray($invocationId, $provider, 'claude', $events);
-
-                return iterator_to_array($generator);
-            }
-
-            protected function processTextStreamFromArray(string $invocationId, $provider, string $model, array $rawEvents): Generator
-            {
-                $messageId = $this->generateEventId();
-
-                foreach ($rawEvents as $event) {
-                    $type = $event['type'] ?? '';
-
-                    if ($type === 'content_block_delta' && ($event['delta']['type'] ?? '') === 'text_delta') {
-                        yield (new TextDelta(
-                            $this->generateEventId(),
-                            $messageId,
-                            $event['delta']['text'] ?? '',
-                            time(),
-                        ))->withInvocationId($invocationId);
-                    }
-                }
-            }
-        };
-
-        $events = $gateway->testMapEvent('inv-1', [
-            ['type' => 'content_block_delta', 'delta' => ['type' => 'text_delta', 'text' => 'Hello']],
-        ]);
-
-        expect($events)->toHaveCount(1);
-        expect($events[0])->toBeInstanceOf(TextDelta::class);
-        expect($events[0]->delta)->toBe('Hello');
-    });
-
-    test('maps content_block_stop to TextEnd', function () {
-        $gateway = new class extends BedrockGateway
-        {
-            public function testMapEvent(string $invocationId, array $events): array
-            {
-                $provider = makeProvider();
-                $generator = $this->processTextStreamFromArray($invocationId, $provider, 'claude', $events);
-
-                return iterator_to_array($generator);
-            }
-
-            protected function processTextStreamFromArray(string $invocationId, $provider, string $model, array $rawEvents): Generator
-            {
-                $messageId = $this->generateEventId();
-                $textStartEmitted = true;
-
-                foreach ($rawEvents as $event) {
-                    $type = $event['type'] ?? '';
-
-                    if ($type === 'content_block_stop' && $textStartEmitted) {
-                        $textStartEmitted = false;
-
-                        yield (new TextEnd(
-                            $this->generateEventId(),
-                            $messageId,
-                            time(),
-                        ))->withInvocationId($invocationId);
-                    }
-                }
-            }
-        };
-
-        $events = $gateway->testMapEvent('inv-1', [
-            ['type' => 'content_block_stop'],
-        ]);
-
-        expect($events)->toHaveCount(1);
-        expect($events[0])->toBeInstanceOf(TextEnd::class);
-    });
-
-    test('stream events carry invocation id', function () {
-        $gateway = new class extends BedrockGateway
-        {
-            public function testMapEvent(string $invocationId, array $events): array
-            {
-                $provider = makeProvider();
-                $generator = $this->processTextStreamFromArray($invocationId, $provider, 'claude', $events);
-
-                return iterator_to_array($generator);
-            }
-
-            protected function processTextStreamFromArray(string $invocationId, $provider, string $model, array $rawEvents): Generator
-            {
-                foreach ($rawEvents as $event) {
-                    if (($event['type'] ?? '') === 'message_start') {
-                        yield (new StreamStart(
-                            $this->generateEventId(),
-                            $provider->name(),
-                            $model,
-                            time(),
-                        ))->withInvocationId($invocationId);
-                    }
-                }
-            }
-        };
-
-        $events = $gateway->testMapEvent('my-invocation-id', [
-            ['type' => 'message_start', 'message' => ['model' => 'claude']],
-        ]);
-
-        expect($events[0]->invocationId)->toBe('my-invocation-id');
     });
 });
 

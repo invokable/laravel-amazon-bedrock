@@ -123,8 +123,14 @@ trait CreatesBedrockClient
         return "model/{$model}/invoke";
     }
 
-    protected function streamUrl(string $model): string
+    protected function converseUrl(string $model): string
     {
-        return "model/{$model}/invoke-with-response-stream";
+        return "model/{$model}/converse";
     }
+
+    protected function converseStreamUrl(string $model): string
+    {
+        return "model/{$model}/converse-stream";
+    }
+
 }

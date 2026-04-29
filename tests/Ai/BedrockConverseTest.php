@@ -150,30 +150,7 @@ function fakeConverseToolUseResponse(): array
     ];
 }
 
-describe('DetectsModelApi', function () {
-    test('identifies Anthropic models correctly', function () {
-        $gateway = new BedrockGateway;
-
-        $ref = new ReflectionMethod($gateway, 'isAnthropicModel');
-
-        expect($ref->invoke($gateway, 'anthropic.claude-3-haiku-20240307-v1:0'))->toBeTrue()
-            ->and($ref->invoke($gateway, 'global.anthropic.claude-sonnet-4-6:0'))->toBeTrue()
-            ->and($ref->invoke($gateway, 'amazon.nova-pro-v1:0'))->toBeFalse()
-            ->and($ref->invoke($gateway, 'meta.llama3-8b-instruct-v1:0'))->toBeFalse()
-            ->and($ref->invoke($gateway, 'mistral.mistral-large-2402-v1:0'))->toBeFalse()
-            ->and($ref->invoke($gateway, 'cohere.command-r-plus-v1:0'))->toBeFalse();
-    });
-
-    test('routes non-Anthropic models to Converse API', function () {
-        $gateway = new BedrockGateway;
-
-        $ref = new ReflectionMethod($gateway, 'useConverseApi');
-
-        expect($ref->invoke($gateway, 'amazon.nova-pro-v1:0'))->toBeTrue()
-            ->and($ref->invoke($gateway, 'meta.llama3-8b-instruct-v1:0'))->toBeTrue()
-            ->and($ref->invoke($gateway, 'anthropic.claude-3-haiku-20240307-v1:0'))->toBeFalse();
-    });
-
+describe('Converse API routing', function () {
     test('generates correct Converse API URLs', function () {
         $gateway = new BedrockGateway;
 
@@ -280,7 +257,8 @@ describe('Converse API generateText', function () {
             $body = json_decode($request->body(), true);
 
             return isset($body['system'])
-                && $body['system'][0]['text'] === 'You are a helpful assistant.';
+                && $body['system'][0]['text'] === 'You are a helpful assistant.'
+                && $body['system'][1]['cachePoint']['type'] === 'default';
         });
     });
 
@@ -393,22 +371,9 @@ describe('Converse API generateText', function () {
         });
     });
 
-    test('still uses Anthropic API for Claude models', function () {
+    test('uses Converse API for Claude models', function () {
         Http::fake([
-            'bedrock-runtime.us-east-1.amazonaws.com/*' => Http::response([
-                'id' => 'msg_test123',
-                'type' => 'message',
-                'role' => 'assistant',
-                'model' => 'anthropic.claude-3-haiku-20240307-v1:0',
-                'content' => [
-                    ['type' => 'text', 'text' => 'Claude response'],
-                ],
-                'stop_reason' => 'end_turn',
-                'usage' => [
-                    'input_tokens' => 10,
-                    'output_tokens' => 20,
-                ],
-            ]),
+            'bedrock-runtime.us-east-1.amazonaws.com/*' => Http::response(fakeConverseResponse('Claude response')),
         ]);
 
         $gateway = new BedrockGateway;
@@ -422,8 +387,7 @@ describe('Converse API generateText', function () {
         expect($response->text)->toBe('Claude response');
 
         Http::assertSent(function ($request) {
-            return str_contains($request->url(), '/model/anthropic.claude-3-haiku-20240307-v1:0/invoke')
-                && ! str_contains($request->url(), '/converse');
+            return str_contains($request->url(), '/model/anthropic.claude-3-haiku-20240307-v1:0/converse');
         });
     });
 });

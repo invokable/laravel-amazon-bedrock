@@ -37,7 +37,7 @@ trait BuildsConverseRequests
         ];
 
         if (filled($instructions)) {
-            $body['system'] = [['text' => $instructions]];
+            $body['system'] = $this->buildConverseSystemPrompt($instructions);
         }
 
         $inferenceConfig = [];
@@ -65,16 +65,31 @@ trait BuildsConverseRequests
             $body['toolConfig'] = $toolConfig;
         }
 
-        // Pass any additional model-specific parameters
-        $additionalFields = $providerOptions['additionalModelRequestFields'] ?? null;
+        $additionalFields = $providerOptions['additionalModelRequestFields'] ?? [];
+
+        unset($providerOptions['anthropic_version']);
+        unset($providerOptions['additionalModelRequestFields']);
+
+        $additionalFields = array_merge($additionalFields, $providerOptions);
 
         if (filled($additionalFields)) {
             $body['additionalModelRequestFields'] = $additionalFields;
         }
 
-        unset($providerOptions['additionalModelRequestFields']);
-
         return $body;
+    }
+
+    /**
+     * Build a Converse system prompt with a prompt cache checkpoint.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    protected function buildConverseSystemPrompt(string $instructions): array
+    {
+        return [
+            ['text' => $instructions],
+            ['cachePoint' => ['type' => 'default']],
+        ];
     }
 
     /**
@@ -243,7 +258,7 @@ trait BuildsConverseRequests
     }
 
     /**
-     * Determine the tool_choice strategy for the Converse API.
+     * Determine the toolChoice strategy for the Converse API.
      */
     protected function resolveConverseToolChoice(?array $schema, array $tools, array $providerOptions): array
     {
@@ -254,5 +269,14 @@ trait BuildsConverseRequests
         return filled($tools)
             ? ['any' => new \stdClass]
             : ['tool' => ['name' => 'output_structured_data']];
+    }
+
+    protected function serializeToolResultOutput(mixed $output): string
+    {
+        return match (true) {
+            is_string($output) => $output,
+            is_array($output) => json_encode($output),
+            default => strval($output),
+        };
     }
 }
