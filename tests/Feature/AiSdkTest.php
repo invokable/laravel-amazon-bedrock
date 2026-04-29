@@ -12,14 +12,11 @@ use Laravel\Ai\Prompts\AudioPrompt;
 use Laravel\Ai\Prompts\EmbeddingsPrompt;
 use Laravel\Ai\Prompts\ImagePrompt;
 use Laravel\Ai\Prompts\RerankingPrompt;
-use Laravel\Ai\Prompts\TranscriptionPrompt;
 use Laravel\Ai\Reranking;
 use Laravel\Ai\Responses\AudioResponse;
 use Laravel\Ai\Responses\ImageResponse;
 use Laravel\Ai\Responses\RerankingResponse;
-use Laravel\Ai\Responses\TranscriptionResponse;
 use Laravel\Ai\StructuredAnonymousAgent;
-use Laravel\Ai\Transcription;
 use Revolution\Amazon\Bedrock\Bedrock;
 
 use function Laravel\Ai\agent;
@@ -102,20 +99,6 @@ describe('Laravel AI SDK', function () {
 
         Audio::assertGenerated(function (AudioPrompt $prompt) {
             return $prompt->contains('Laravel');
-        });
-    });
-
-    test('Transcription', function () {
-        Transcription::fake();
-
-        $response = Transcription::of('fake-audio-data')
-            ->language('en')
-            ->generate(provider: Bedrock::KEY);
-
-        expect($response)->toBeInstanceOf(TranscriptionResponse::class);
-
-        Transcription::assertGenerated(function (TranscriptionPrompt $prompt) {
-            return $prompt->language === 'en';
         });
     });
 

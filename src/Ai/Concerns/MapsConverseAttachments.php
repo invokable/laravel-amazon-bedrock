@@ -181,6 +181,23 @@ trait MapsConverseAttachments
         };
     }
 
+    protected function audioMimeToFormat(?string $mimeType): string
+    {
+        return match ($mimeType) {
+            'audio/mpeg', 'audio/mp3' => 'mp3',
+            'audio/wav', 'audio/x-wav' => 'wav',
+            'audio/flac', 'audio/x-flac' => 'flac',
+            'audio/ogg', 'audio/ogg; codecs=opus' => 'ogg',
+            'audio/opus' => 'opus',
+            'audio/aac', 'audio/x-aac' => 'aac',
+            'audio/mp4', 'audio/m4a', 'audio/x-m4a' => 'm4a',
+            'audio/webm' => 'webm',
+            'audio/x-matroska' => 'mka',
+            'video/x-matroska' => 'mkv',
+            default => 'mp3',
+        };
+    }
+
     protected function documentMimeToFormat(?string $mimeType, ?string $name = null): string
     {
         return match ($mimeType) {
