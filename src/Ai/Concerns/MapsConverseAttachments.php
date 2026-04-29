@@ -17,6 +17,9 @@ use Laravel\Ai\Files\ProviderImage;
 
 trait MapsConverseAttachments
 {
+    /**
+     * Bedrock Converse API format strings that can be inferred from file extensions.
+     */
     protected const array FILENAME_FORMATS = [
         'csv',
         'doc',
@@ -54,7 +57,7 @@ trait MapsConverseAttachments
                 throw new InvalidArgumentException('Unsupported attachment type ['.get_class($attachment).']');
             }
 
-            if ($attachment instanceof Image || ($attachment instanceof UploadedFile && $this->isConverseImage($attachment))) {
+            if ($this->isConverseImageAttachment($attachment)) {
                 return [
                     'image' => [
                         'format' => $this->imageMimeToFormat($this->attachmentMimeType($attachment)),
@@ -65,7 +68,7 @@ trait MapsConverseAttachments
                 ];
             }
 
-            if ($attachment instanceof Audio || ($attachment instanceof UploadedFile && $this->isConverseAudio($attachment))) {
+            if ($this->isConverseAudioAttachment($attachment)) {
                 return [
                     'audio' => [
                         'format' => $this->audioMimeToFormat($this->attachmentMimeType($attachment)),
@@ -76,10 +79,10 @@ trait MapsConverseAttachments
                 ];
             }
 
-            if ($attachment instanceof UploadedFile && $this->isConverseVideo($attachment)) {
+            if ($this->isConverseVideoAttachment($attachment)) {
                 return [
                     'video' => [
-                        'format' => $this->videoMimeToFormat($this->attachmentMimeType($attachment), $attachment->getClientOriginalName()),
+                        'format' => $this->videoMimeToFormat($this->attachmentMimeType($attachment), $this->attachmentName($attachment)),
                         'source' => [
                             'bytes' => base64_encode($this->attachmentContent($attachment)),
                         ],
@@ -87,7 +90,7 @@ trait MapsConverseAttachments
                 ];
             }
 
-            if ($attachment instanceof Document || $attachment instanceof UploadedFile) {
+            if ($this->isConverseDocumentAttachment($attachment)) {
                 return [
                     'document' => [
                         'format' => $this->documentMimeToFormat($this->attachmentMimeType($attachment), $this->attachmentName($attachment)),
@@ -101,6 +104,28 @@ trait MapsConverseAttachments
 
             throw new InvalidArgumentException('Unsupported attachment type ['.get_class($attachment).']');
         })->all();
+    }
+
+    protected function isConverseImageAttachment(File|UploadedFile $attachment): bool
+    {
+        return $attachment instanceof Image
+            || ($attachment instanceof UploadedFile && $this->isConverseImage($attachment));
+    }
+
+    protected function isConverseAudioAttachment(File|UploadedFile $attachment): bool
+    {
+        return $attachment instanceof Audio
+            || ($attachment instanceof UploadedFile && $this->isConverseAudio($attachment));
+    }
+
+    protected function isConverseVideoAttachment(File|UploadedFile $attachment): bool
+    {
+        return $attachment instanceof UploadedFile && $this->isConverseVideo($attachment);
+    }
+
+    protected function isConverseDocumentAttachment(File|UploadedFile $attachment): bool
+    {
+        return $attachment instanceof Document || $attachment instanceof UploadedFile;
     }
 
     protected function attachmentContent(File|UploadedFile $attachment): string
@@ -199,6 +224,13 @@ trait MapsConverseAttachments
         return $default;
     }
 
+    /**
+     * Build a Bedrock-safe document name.
+     *
+     * Bedrock document names may only contain letters, numbers, whitespace,
+     * hyphens, parentheses, and square brackets, and must be at most 200
+     * characters.
+     */
     protected function converseDocumentName(?string $name): string
     {
         $name = Str::of($name ?: 'Document')
