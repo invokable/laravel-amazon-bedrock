@@ -10,17 +10,17 @@ Docs: [English](https://kawax.biz/en/packages/laravel-amazon-bedrock) [Japanese]
 
 An Amazon Bedrock driver for the [Laravel AI SDK](https://laravel.com/docs/ai-sdk), enabling text generation, streaming, tool use (function calling), structured output, embeddings, image generation, audio (TTS), transcription (STT), and reranking via models on AWS Bedrock.
 
-| Feature            | API key | Supported Models                                                                                              |
-|--------------------|---------|---------------------------------------------------------------------------------------------------------------|
-| Text, Streaming    | ✅       | Anthropic Claude, Amazon Nova, Meta Llama, Mistral, Cohere Command R, DeepSeek, AI21 Jamba (via Converse API) |
-| Tool Use           | ✅       | Anthropic Claude, Amazon Nova, Meta Llama 3.1+, Mistral Large, Cohere Command R                               |
-| Structured Output  | ✅       | Anthropic Claude, Amazon Nova, Meta Llama 3.1+, Mistral Large, Cohere Command R                               |
-| Images             | ✅       | Stability AI models (default), Amazon Nova Canvas (deprecated).                                               |
-| Audio(TTS)         | ⚠️      | Amazon Polly (generative, neural, long-form, standard engines)                                                |
-| Transcription(STT) | ⚠️      | Amazon Nova 2 Lite (via Converse API AudioBlock)                                                              |
-| Embeddings         | ✅       | Amazon Titan Embeddings V2 (default), Cohere Embed English/Multilingual V3, Cohere Embed V4 (batch support).  |
-| Reranking          | ⚠️      | Cohere Rerank 3.5, Amazon Rerank 1.0                                                                          |
-| Files              | —       | Not supported (Bedrock has no server-side file storage API)                                                   |
+| Feature            | API key | Supported Models                                                                                             |
+|--------------------|---------|--------------------------------------------------------------------------------------------------------------|
+| Text, Streaming    | ✅       | Anthropic Claude (via Invoke), Amazon Nova, mostly Bedrock models (via Converse API)                         |
+| Tool Use           | ✅       |                                                                                                              |
+| Structured Output  | ✅       |                                                                                                              |
+| Images             | ✅       | Stability AI models (default), Amazon Nova Canvas (deprecated).                                              |
+| Audio(TTS)         | ⚠️      | Amazon Polly (generative, neural, long-form, standard engines)                                               |
+| Transcription(STT) | ⚠️      | Amazon Nova 2 Lite (via Converse API AudioBlock)                                                             |
+| Embeddings         | ✅       | Amazon Titan Embeddings V2 (default), Cohere Embed English/Multilingual V3, Cohere Embed V4 (batch support). |
+| Reranking          | ⚠️      | Cohere Rerank 3.5, Amazon Rerank 1.0                                                                         |
+| Files              | —       | Not supported (Bedrock has no server-side file storage API)                                                  |
 
 - **Authentication**: Bedrock API key, AWS IAM credentials (SigV4), or default AWS credential chain (IAM roles, instance profiles, etc.).
 - **Failover**: Supports the AI SDK's multi-provider failover. Rate limit (429), overload (503, 529), and credit errors are mapped to failoverable exceptions.
