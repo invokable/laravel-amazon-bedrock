@@ -8,24 +8,25 @@ Docs: [English](https://kawax.biz/en/packages/laravel-amazon-bedrock) [Japanese]
 
 ## Overview
 
-An Amazon Bedrock driver for the [Laravel AI SDK](https://laravel.com/docs/ai-sdk), enabling text generation, streaming, tool use (function calling), structured output, embeddings, image generation, audio (TTS), transcription (STT), and reranking via models on AWS Bedrock.
+An Amazon Bedrock driver for the [Laravel AI SDK](https://laravel.com/docs/ai-sdk), enabling text generation, streaming, tool use (function calling), structured output, file attachments, embeddings, image generation, audio (TTS), transcription (STT), and reranking via models on AWS Bedrock.
 
 | Feature            | API key | Supported Models                                                                                             |
 |--------------------|---------|--------------------------------------------------------------------------------------------------------------|
-| Text, Streaming    | ✅       | Anthropic Claude, Amazon Nova, mostly Bedrock models (via Converse API)                                      |
+| Text, Streaming    | ✅       | Anthropic Claude, Amazon Nova, and most Bedrock models (all via Converse API)                                |
 | Tool Use           | ✅       |                                                                                                              |
 | Structured Output  | ✅       |                                                                                                              |
+| File Attachments   | ✅       | Image, document, audio, and video attachments via Converse API (model support varies)                        |
 | Images             | ✅       | Stability AI models (default), Amazon Nova Canvas (deprecated).                                              |
 | Audio(TTS)         | ⚠️      | Amazon Polly (generative, neural, long-form, standard engines)                                               |
 | Transcription(STT) | ⚠️      | Amazon Nova 2 Lite (via Converse API AudioBlock)                                                             |
 | Embeddings         | ✅       | Amazon Titan Embeddings V2 (default), Cohere Embed English/Multilingual V3, Cohere Embed V4 (batch support). |
 | Reranking          | ⚠️      | Cohere Rerank 3.5, Amazon Rerank 1.0                                                                         |
-| Files              | —       | Not supported (Bedrock has no server-side file storage API)                                                  |
+| Files              | ⚠️      | Local file attachments supported via text generation; server-side upload and `fromId()` not supported        |
 
 - **Authentication**: Bedrock API key, AWS IAM credentials (SigV4), or default AWS credential chain (IAM roles, instance profiles, etc.).
 - **Failover**: Supports the AI SDK's multi-provider failover. Rate limit (429), overload (503, 529), and credit errors are mapped to failoverable exceptions.
-- **Cache Control**: Ephemeral cache always enabled on system prompts (Anthropic models).
-- **Multi-model**: Anthropic Claude uses the native Anthropic Messages API; all other models use the [Bedrock Converse API](https://docs.aws.amazon.com/bedrock/latest/userguide/conversation-inference.html) for a unified interface.
+- **Cache Control**: Ephemeral cache always enabled on system prompts via the [Bedrock Converse API](https://docs.aws.amazon.com/bedrock/latest/userguide/conversation-inference.html).
+- **Unified API**: All models — Anthropic Claude, Amazon Nova, Meta Llama, Mistral, and more — are routed through the Bedrock Converse API for a consistent interface.
 
 ## Requirements
 
@@ -286,6 +287,43 @@ $response = agent(
 
 Tool calls also work with streaming — the SDK automatically executes tool calls and continues the conversation until the model produces a final text response.
 
+### File Attachments
+
+Attach images, documents, audio, and video files to your prompts using the `attachments` parameter. The Bedrock Converse API handles the attachment blocks — actual format support varies by model (e.g., Anthropic Claude supports images and documents only).
+
+```php
+use Laravel\Ai\Files\Document;
+use Laravel\Ai\Files\Image;
+
+use function Laravel\Ai\agent;
+
+// Attach an image from a local path
+$response = agent(
+    instructions: 'You are a helpful assistant.',
+)->prompt('Describe this image.', attachments: [
+    Image::fromPath('/path/to/photo.jpg'),
+]);
+
+// Attach a document from a URL
+$response = agent(
+    instructions: 'You are a helpful assistant.',
+)->prompt('Summarize this document.', attachments: [
+    Document::fromUrl('https://example.com/report.pdf'),
+]);
+
+// Attach a document from a string (with explicit format)
+$response = agent(
+    instructions: 'You are a helpful assistant.',
+)->prompt('Analyze this text.', attachments: [
+    Document::fromString($csvContent, 'text/csv')->as('data.csv'),
+]);
+```
+
+Supported attachment types: `Image`, `Document`, `Audio` (via `Laravel\Ai\Files\*`). Video attachments are supported through `Illuminate\Http\UploadedFile`.
+
+> [!NOTE]
+> Server-side file upload (`Document::fromPath()->put()`) and reuse by ID (`Document::fromId()`) are not supported on Bedrock.
+
 ### Conversation History
 
 Maintain multi-turn conversations by implementing the `Conversational` interface in your agent class. The `messages()` method should return the previous conversation messages, which will be automatically included in each prompt:
@@ -370,7 +408,7 @@ $response = (new ChatAgent)
     ->prompt('Tell me more about that.');
 ```
 
-The Bedrock driver automatically includes conversation history in the Anthropic Messages API and Bedrock Converse API requests, so all supported models benefit from multi-turn conversation context.
+The Bedrock driver automatically includes conversation history in Bedrock Converse API requests, so all supported models benefit from multi-turn conversation context.
 
 ### Structured Output
 
@@ -426,14 +464,20 @@ echo $response['name']; // "Alice"
 echo $response['age'];  // 25
 ```
 
-Under the hood, the driver creates a synthetic tool (`output_structured_data`) that forces Claude to return data matching your schema. This approach is compatible with all Claude models on Bedrock and non-Anthropic models via the Converse API.
+Under the hood, the driver creates a synthetic tool (`output_structured_data`) that forces the model to return data matching your schema. This approach is compatible with all models on Bedrock via the Converse API.
 
-### Non-Anthropic Models (Converse API)
+### Converse API (All Models)
 
-The driver automatically detects the model family and routes non-Anthropic models through the [Bedrock Converse API](https://docs.aws.amazon.com/bedrock/latest/userguide/conversation-inference.html). This provides access to Amazon Nova, Meta Llama, Mistral, Cohere, DeepSeek, and other models available on Bedrock — all through the same Laravel AI SDK interface.
+All text generation and streaming is routed through the [Bedrock Converse API](https://docs.aws.amazon.com/bedrock/latest/userguide/conversation-inference.html), including Anthropic Claude models. This gives a unified interface to Anthropic Claude, Amazon Nova, Meta Llama, Mistral, Cohere, DeepSeek, and other models available on Bedrock.
 
 ```php
 use function Laravel\Ai\agent;
+
+// Anthropic Claude (uses Converse API)
+$response = agent(
+    instructions: 'You are an expert at software development.',
+    model: 'anthropic.claude-sonnet-4-5',
+)->prompt('Tell me about Laravel.');
 
 // Amazon Nova
 $response = agent(
@@ -466,11 +510,7 @@ $response = agent(
 )->prompt('Solve this math problem.');
 ```
 
-Streaming, tool use, and structured output work with Converse API models that support these features. See the [Bedrock supported models table](https://docs.aws.amazon.com/bedrock/latest/userguide/conversation-inference-supported-models-features.html) for feature availability per model.
-
-**API routing:**
-- Anthropic Claude models (`anthropic.*`) → Anthropic Messages API (`/model/{id}/invoke`)
-- All other models → Converse API (`/model/{id}/converse`)
+Streaming, tool use, structured output, and file attachments work with models that support those features. See the [Bedrock supported models table](https://docs.aws.amazon.com/bedrock/latest/userguide/conversation-inference-supported-models-features.html) for feature availability per model.
 
 ### Provider Options
 
@@ -498,7 +538,7 @@ class BedrockAgent implements Agent, HasProviderOptions
     public function providerOptions(Lab|string $provider): array
     {
         return [
-            'anthropic_version' => 'bedrock-2023-05-31',
+            'top_p' => 0.9,
         ];
     }
 }
@@ -506,12 +546,11 @@ class BedrockAgent implements Agent, HasProviderOptions
 
 Supported provider options:
 
-| Option                         | Description                                | Default              |
-|--------------------------------|--------------------------------------------|----------------------|
-| `anthropic_version`            | Anthropic API version (Claude models only) | `bedrock-2023-05-31` |
-| `top_k`                        | Top-K sampling parameter                   | —                    |
-| `top_p`                        | Top-P (nucleus) sampling parameter         | —                    |
-| `additionalModelRequestFields` | Converse API additional model parameters   | —                    |
+| Option                         | Description                                | Default |
+|--------------------------------|--------------------------------------------|---------|
+| `top_k`                        | Top-K sampling parameter                   | —       |
+| `top_p`                        | Top-P (nucleus) sampling parameter         | —       |
+| `additionalModelRequestFields` | Converse API additional model parameters   | —       |
 
 ### Agent Configuration
 
