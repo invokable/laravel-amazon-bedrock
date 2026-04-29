@@ -140,6 +140,11 @@ describe('HandlesFailoverErrors', function () {
                 return 'audio/mp3';
             }
 
+            public function withMimeType(string $mimeType): static
+            {
+                return new self;
+            }
+
             public function transcription(): PendingTranscriptionGeneration
             {
                 return new PendingTranscriptionGeneration($this);

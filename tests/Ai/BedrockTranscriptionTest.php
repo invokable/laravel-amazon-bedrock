@@ -27,6 +27,11 @@ function fakeTranscribableAudio(string $content = 'fake-audio-data', ?string $mi
             return $this->audioMimeType;
         }
 
+        public function withMimeType(string $mimeType): static
+        {
+            return new self($this->audioContent, $mimeType);
+        }
+
         public function transcription(): PendingTranscriptionGeneration
         {
             return new PendingTranscriptionGeneration($this);
