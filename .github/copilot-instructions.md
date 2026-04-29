@@ -25,7 +25,7 @@ Prismにバグがあったので作ったパッケージだったけどその後
 - [x] 公式のパッチバージョンの変化でテストが失敗しているので修正が必要。
 - [x] Converse APIはテキスト生成時にファイルの添付に対応している。`->prompt('', attachments: [])`からUserMessageのattachmentsに渡されている。今のコードは公式のAnthropicの実装を参考にしているので`mapConverseUserMessage()`を公式の`mapUserMessage()`のようにすればいいはず。ファイル名などBedrock特有の制限がある。TranscriptionsのAudioBlockと似たパターン。`audio` `image` `document` `video`に対応している。 https://docs.aws.amazon.com/bedrock/latest/userguide/conversation-inference-call.html 。`InvokeModel`でも対応している。マルチモーダルに対応してるかはモデル次第。
 - [x] InvokeModelよりConverse APIの方が新しいのでAnthropicもConverse APIに変更して統一。
-- [ ] READMEで「TranscriptionsはConverse APIなのでBedrock APIキーで使えない」ことにされてるけど特殊な使い方ではなく上の添付ファイルでAudioBlockを渡してるだけなので使えるのでは。再調査。
+- [ ] Transcriptionsは `workbench/routes/console.php` で試したら動かない。AudioBlockに対応してるモデルがもうない。Amazon Transcribeを使うのがもう主流。一旦非対応に戻す。
 - 機能追加のタスクがなくなったら既存コードのリファクタリングやテスト追加やLaravel AI SDKのアップデート対応を行う。Laravel AI SDKはまだv0.x、composerはv1.0前では+0.1でもメジャーバージョンアップ扱いなのでまだまだ破壊的変更が入る可能性がある。
 
 GitHub Agentic Workflowsで少しずつ実行。

@@ -8,6 +8,7 @@ use Laravel\Ai\Embeddings;
 use Laravel\Ai\Image;
 use Laravel\Ai\Reranking;
 use Laravel\Ai\Streaming\Events\TextDelta;
+use Laravel\Ai\Transcription;
 use Revolution\Amazon\Bedrock\Bedrock;
 use Workbench\App\Ai\Tools\TimezoneTool;
 
@@ -150,6 +151,19 @@ Artisan::command('bedrock:image', function () {
     $this->info('Image saved to: '.$path);
     $this->info('MIME type: '.$image->mime);
 })->purpose('Image generation with Stability AI');
+
+// -----------------------------------------------------------------------
+// Transcription(STT)
+// vendor/bin/testbench bedrock:stt
+// -----------------------------------------------------------------------
+Artisan::command('bedrock:stt', function () {
+    $file = realpath(__DIR__.'/../resources/audio.mp3');
+
+    $response = Transcription::fromPath($file)
+        ->generate(provider: Bedrock::KEY);
+
+    $this->info('Text: '.$response->text);
+})->purpose('Generate transcription');
 
 // -----------------------------------------------------------------------
 // Reranking (Cohere Rerank)
