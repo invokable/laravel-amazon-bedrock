@@ -184,7 +184,7 @@ trait MapsConverseAttachments
     protected function documentMimeToFormat(?string $mimeType, ?string $name = null): string
     {
         return match ($mimeType) {
-            null => $this->formatFromFilename($name, 'txt'),
+            null => $this->inferFormatFromFilename($name, 'txt'),
             'application/pdf' => 'pdf',
             'text/csv', 'application/csv' => 'csv',
             'application/msword' => 'doc',
@@ -194,14 +194,14 @@ trait MapsConverseAttachments
             'text/html' => 'html',
             'text/markdown' => 'md',
             'text/plain' => 'txt',
-            default => $this->formatFromFilename($name, 'txt'),
+            default => $this->inferFormatFromFilename($name, 'txt'),
         };
     }
 
     protected function videoMimeToFormat(?string $mimeType, ?string $name = null): string
     {
         return match ($mimeType) {
-            null => $this->formatFromFilename($name, 'mp4'),
+            null => $this->inferFormatFromFilename($name, 'mp4'),
             'video/x-matroska' => 'mkv',
             'video/quicktime' => 'mov',
             'video/mp4' => 'mp4',
@@ -210,13 +210,13 @@ trait MapsConverseAttachments
             'video/mpeg' => 'mpeg',
             'video/x-ms-wmv' => 'wmv',
             'video/3gpp' => 'three_gp',
-            default => $this->formatFromFilename($name, 'mp4'),
+            default => $this->inferFormatFromFilename($name, 'mp4'),
         };
     }
 
-    protected function formatFromFilename(?string $name, string $default): string
+    protected function inferFormatFromFilename(?string $name, string $default): string
     {
-        $extension = Str::of((string) $name)->afterLast('.')->lower()->toString();
+        $extension = Str::of((string) pathinfo((string) $name, PATHINFO_EXTENSION))->lower()->toString();
 
         if (array_key_exists($extension, self::FORMAT_ALIASES)) {
             return self::FORMAT_ALIASES[$extension];
