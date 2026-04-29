@@ -8,7 +8,7 @@ Docs: [English](https://kawax.biz/en/packages/laravel-amazon-bedrock) [Japanese]
 
 ## Overview
 
-An Amazon Bedrock driver for the [Laravel AI SDK](https://laravel.com/docs/ai-sdk), enabling text generation, streaming, tool use (function calling), structured output, file attachments, embeddings, image generation, audio (TTS), transcription (STT), and reranking via models on AWS Bedrock.
+An Amazon Bedrock driver for the [Laravel AI SDK](https://laravel.com/docs/ai-sdk), enabling text generation, streaming, tool use (function calling), structured output, file attachments, embeddings, image generation, audio (TTS), and reranking via models on AWS Bedrock.
 
 | Feature            | API key | Supported Models                                                                                             |
 |--------------------|---------|--------------------------------------------------------------------------------------------------------------|
@@ -18,7 +18,7 @@ An Amazon Bedrock driver for the [Laravel AI SDK](https://laravel.com/docs/ai-sd
 | File Attachments   | ✅       | Image, document, audio, and video attachments via Converse API (model support varies)                        |
 | Images             | ✅       | Stability AI models (default), Amazon Nova Canvas (deprecated).                                              |
 | Audio(TTS)         | ⚠️      | Amazon Polly (generative, neural, long-form, standard engines)                                               |
-| Transcription(STT) | ⚠️      | Amazon Nova 2 Lite (via Converse API AudioBlock)                                                             |
+| Transcription(STT) | ❌       | Not supported                                                                                                |
 | Embeddings         | ✅       | Amazon Titan Embeddings V2 (default), Cohere Embed English/Multilingual V3, Cohere Embed V4 (batch support). |
 | Reranking          | ⚠️      | Cohere Rerank 3.5, Amazon Rerank 1.0                                                                         |
 | Files              | ⚠️      | Local file attachments supported via text generation; server-side upload and `fromId()` not supported        |
@@ -53,7 +53,6 @@ Add the `amazon-bedrock` driver to `config/ai.php`:
 'default_for_audio' => 'amazon-bedrock',
 'default_for_embeddings' => 'amazon-bedrock',
 'default_for_reranking' => 'amazon-bedrock',
-'default_for_transcription' => 'amazon-bedrock',
 
 'providers' => [
     'amazon-bedrock' => [
@@ -134,7 +133,6 @@ The default credential chain automatically resolves credentials from environment
 | `models.image.default`         | Default image model             | `stability.stable-image-core-v1:1`                |
 | `models.audio.default`         | Default audio (TTS) engine      | `generative`                                      |
 | `models.reranking.default`     | Default reranking model         | `cohere.rerank-v3-5:0`                            |
-| `models.transcription.default` | Default transcription model     | `us.amazon.nova-2-lite-v1:0`                      |
 
 ## Text Generation
 
@@ -734,48 +732,6 @@ $response = Audio::of('I love coding with Laravel.')
 
 > [!WARNING]
 > Amazon Polly is a separate AWS service from Bedrock. The Bedrock API key (bearer token) cannot be used with Polly. Use AWS IAM credentials (SigV4) or the default AWS credential chain instead.
-
-## Transcription (STT)
-
-Transcribe audio to text using [Amazon Nova 2 Lite](https://docs.aws.amazon.com/nova/latest/userguide/what-is-nova.html) via the Converse API AudioBlock:
-
-```php
-use Laravel\Ai\Transcription;
-use Revolution\Amazon\Bedrock\Bedrock;
-
-$response = Transcription::of('base64-encoded-audio-data')
-    ->generate(provider: Bedrock::KEY);
-
-echo $response->text;
-```
-
-From a file path:
-
-```php
-$response = Transcription::fromPath('/path/to/audio.mp3')
-    ->generate(provider: Bedrock::KEY);
-```
-
-Specify language and enable speaker diarization:
-
-```php
-$response = Transcription::of($audioData)
-    ->language('en')
-    ->diarize()
-    ->generate(provider: Bedrock::KEY);
-```
-
-Use a custom model:
-
-```php
-$response = Transcription::of($audioData)
-    ->generate(provider: Bedrock::KEY, model: 'us.amazon.nova-2-pro-v1:0');
-```
-
-**Supported audio formats:** MP3, WAV, FLAC, OGG, WebM, AAC, M4A, Opus, MKA.
-
-> [!WARNING]
-> Transcription uses the Converse API AudioBlock, which sends audio to an LLM for transcription. The Bedrock API key (bearer token) cannot be used with the Converse API. Use AWS IAM credentials (SigV4) or the default AWS credential chain. Segment-level timestamps are not available with this approach — only the full transcription text is returned.
 
 ## Embeddings
 

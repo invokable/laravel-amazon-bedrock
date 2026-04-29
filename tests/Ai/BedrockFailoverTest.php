@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
-use Laravel\Ai\Contracts\Files\TranscribableAudio;
 use Laravel\Ai\Exceptions\ProviderOverloadedException;
 use Laravel\Ai\Exceptions\RateLimitedException;
-use Laravel\Ai\PendingResponses\PendingTranscriptionGeneration;
 use Revolution\Amazon\Bedrock\Ai\BedrockGateway;
 
 // makeProvider() is defined in BedrockGatewayTest.php and available globally via Pest.
@@ -117,51 +115,6 @@ describe('HandlesFailoverErrors', function () {
             model: 'generative',
             text: 'Hello world',
             voice: 'Ruth',
-        );
-    })->throws(RateLimitedException::class);
-
-    test('throws RateLimitedException on 429 for transcription', function () {
-        Http::fake([
-            'bedrock-runtime.us-east-1.amazonaws.com/*' => Http::response(
-                ['message' => 'Throttled'],
-                429,
-            ),
-        ]);
-
-        $audio = new class implements TranscribableAudio
-        {
-            public function content(): string
-            {
-                return 'fake-audio-content';
-            }
-
-            public function mimeType(): string
-            {
-                return 'audio/mp3';
-            }
-
-            public function withMimeType(string $mimeType): static
-            {
-                return new self;
-            }
-
-            public function transcription(): PendingTranscriptionGeneration
-            {
-                return new PendingTranscriptionGeneration($this);
-            }
-
-            public function __toString(): string
-            {
-                return 'fake-audio';
-            }
-        };
-
-        $gateway = new BedrockGateway;
-
-        $gateway->generateTranscription(
-            provider: makeProvider(),
-            model: 'us.amazon.nova-2-lite-v1:0',
-            audio: $audio,
         );
     })->throws(RateLimitedException::class);
 

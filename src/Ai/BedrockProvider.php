@@ -10,41 +10,35 @@ use Laravel\Ai\Contracts\Gateway\EmbeddingGateway;
 use Laravel\Ai\Contracts\Gateway\ImageGateway;
 use Laravel\Ai\Contracts\Gateway\RerankingGateway;
 use Laravel\Ai\Contracts\Gateway\TextGateway;
-use Laravel\Ai\Contracts\Gateway\TranscriptionGateway;
 use Laravel\Ai\Contracts\Providers\AudioProvider;
 use Laravel\Ai\Contracts\Providers\EmbeddingProvider;
 use Laravel\Ai\Contracts\Providers\ImageProvider;
 use Laravel\Ai\Contracts\Providers\RerankingProvider;
 use Laravel\Ai\Contracts\Providers\TextProvider;
-use Laravel\Ai\Contracts\Providers\TranscriptionProvider;
 use Laravel\Ai\Providers\Concerns\GeneratesAudio;
 use Laravel\Ai\Providers\Concerns\GeneratesEmbeddings;
 use Laravel\Ai\Providers\Concerns\GeneratesImages;
 use Laravel\Ai\Providers\Concerns\GeneratesText;
-use Laravel\Ai\Providers\Concerns\GeneratesTranscriptions;
 use Laravel\Ai\Providers\Concerns\HasAudioGateway;
 use Laravel\Ai\Providers\Concerns\HasEmbeddingGateway;
 use Laravel\Ai\Providers\Concerns\HasImageGateway;
 use Laravel\Ai\Providers\Concerns\HasRerankingGateway;
 use Laravel\Ai\Providers\Concerns\HasTextGateway;
-use Laravel\Ai\Providers\Concerns\HasTranscriptionGateway;
 use Laravel\Ai\Providers\Concerns\Reranks;
 use Laravel\Ai\Providers\Concerns\StreamsText;
 use Laravel\Ai\Providers\Provider;
 
-class BedrockProvider extends Provider implements AudioProvider, EmbeddingProvider, ImageProvider, RerankingProvider, TextProvider, TranscriptionProvider
+class BedrockProvider extends Provider implements AudioProvider, EmbeddingProvider, ImageProvider, RerankingProvider, TextProvider
 {
     use GeneratesAudio;
     use GeneratesEmbeddings;
     use GeneratesImages;
     use GeneratesText;
-    use GeneratesTranscriptions;
     use HasAudioGateway;
     use HasEmbeddingGateway;
     use HasImageGateway;
     use HasRerankingGateway;
     use HasTextGateway;
-    use HasTranscriptionGateway;
     use Reranks;
     use StreamsText;
 
@@ -116,16 +110,6 @@ class BedrockProvider extends Provider implements AudioProvider, EmbeddingProvid
     public function defaultRerankingModel(): string
     {
         return $this->config['models']['reranking']['default'] ?? 'cohere.rerank-v3-5:0';
-    }
-
-    public function transcriptionGateway(): TranscriptionGateway
-    {
-        return $this->transcriptionGateway ??= new BedrockGateway;
-    }
-
-    public function defaultTranscriptionModel(): string
-    {
-        return $this->config['models']['transcription']['default'] ?? 'us.amazon.nova-2-lite-v1:0';
     }
 
     /**
