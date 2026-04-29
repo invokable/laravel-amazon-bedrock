@@ -43,18 +43,25 @@ trait MapsConverseAttachments
         'xlsx',
     ];
 
+    protected const array FORMAT_ALIASES = [
+        '3gp' => 'three_gp',
+        'jpg' => 'jpeg',
+    ];
+
+    protected const string DOCUMENT_NAME_PATTERN = '/[^A-Za-z0-9\s()\[\]-]/';
+
     /**
      * Map the given Laravel attachments to Bedrock Converse content blocks.
      */
     protected function mapConverseAttachments(Collection $attachments): array
     {
         return $attachments->map(function (mixed $attachment): array {
-            if (! $attachment instanceof File && ! $attachment instanceof UploadedFile) {
-                throw new InvalidArgumentException('Unsupported attachment type ['.get_debug_type($attachment).']');
-            }
-
             if ($attachment instanceof ProviderImage || $attachment instanceof ProviderDocument) {
                 throw new InvalidArgumentException('Unsupported attachment type ['.get_class($attachment).']');
+            }
+
+            if (! $attachment instanceof File && ! $attachment instanceof UploadedFile) {
+                throw new InvalidArgumentException('Unsupported attachment type ['.get_debug_type($attachment).']');
             }
 
             if ($this->isConverseImageAttachment($attachment)) {
@@ -177,6 +184,7 @@ trait MapsConverseAttachments
     protected function documentMimeToFormat(?string $mimeType, ?string $name = null): string
     {
         return match ($mimeType) {
+            null => $this->formatFromFilename($name, 'txt'),
             'application/pdf' => 'pdf',
             'text/csv', 'application/csv' => 'csv',
             'application/msword' => 'doc',
@@ -193,6 +201,7 @@ trait MapsConverseAttachments
     protected function videoMimeToFormat(?string $mimeType, ?string $name = null): string
     {
         return match ($mimeType) {
+            null => $this->formatFromFilename($name, 'mp4'),
             'video/x-matroska' => 'mkv',
             'video/quicktime' => 'mov',
             'video/mp4' => 'mp4',
@@ -209,12 +218,8 @@ trait MapsConverseAttachments
     {
         $extension = Str::of((string) $name)->afterLast('.')->lower()->toString();
 
-        if ($extension === 'jpg') {
-            return 'jpeg';
-        }
-
-        if ($extension === '3gp') {
-            return 'three_gp';
+        if (array_key_exists($extension, self::FORMAT_ALIASES)) {
+            return self::FORMAT_ALIASES[$extension];
         }
 
         if (in_array($extension, self::FILENAME_FORMATS, true)) {
@@ -235,7 +240,7 @@ trait MapsConverseAttachments
     {
         $name = Str::of($name ?: 'Document')
             ->beforeLast('.')
-            ->replaceMatches('/[^A-Za-z0-9\s()\[\]-]/', ' ')
+            ->replaceMatches(self::DOCUMENT_NAME_PATTERN, ' ')
             ->squish()
             ->limit(200, '')
             ->toString();

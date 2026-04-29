@@ -106,6 +106,7 @@ trait BuildsConverseRequests
         ];
 
         if ($message instanceof UserMessage && $message->attachments->isNotEmpty()) {
+            // Bedrock Converse examples place media and document blocks before the prompt text.
             $content = array_merge($this->mapConverseAttachments($message->attachments), $content);
         }
 
