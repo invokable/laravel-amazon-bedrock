@@ -29,6 +29,7 @@ class BedrockGateway implements AudioGateway, EmbeddingGateway, ImageGateway, Re
     use Concerns\GeneratesTranscriptions;
     use Concerns\HandlesConverseStreaming;
     use Concerns\HandlesTextStreaming;
+    use Concerns\MapsConverseAttachments;
     use Concerns\MapsMessages;
     use Concerns\MapsTools;
     use Concerns\ParsesConverseResponses;
