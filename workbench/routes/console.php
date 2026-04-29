@@ -19,7 +19,7 @@ use function Laravel\Ai\agent;
 // .envを変更後はcomposer run buildを実行してtestbench内の.envも更新する。
 
 // -----------------------------------------------------------------------
-// Text Generation (Anthropic Claude via native API)
+// Text Generation (Anthropic Claude via Converse API)
 // vendor/bin/testbench bedrock:text
 // -----------------------------------------------------------------------
 Artisan::command('bedrock:text', function () {
@@ -28,10 +28,10 @@ Artisan::command('bedrock:text', function () {
     )->prompt('Tell me about Laravel in one sentence.', provider: Bedrock::KEY);
 
     $this->info($response->text);
-})->purpose('Text generation with Anthropic Claude (native API)');
+})->purpose('Text generation with Anthropic Claude (Converse API)');
 
 // -----------------------------------------------------------------------
-// Streaming Text (Anthropic Claude via native API)
+// Streaming Text (Anthropic Claude via Converse API)
 // vendor/bin/testbench bedrock:text-stream
 // -----------------------------------------------------------------------
 Artisan::command('bedrock:text-stream', function () {
@@ -46,10 +46,10 @@ Artisan::command('bedrock:text-stream', function () {
     }
 
     echo PHP_EOL;
-})->purpose('Streaming text generation with Anthropic Claude (native API)');
+})->purpose('Streaming text generation with Anthropic Claude (Converse API)');
 
 // -----------------------------------------------------------------------
-// Text Generation via Converse API (non-Anthropic model, e.g. Amazon Nova)
+// Text Generation via Converse API (Amazon Nova)
 // vendor/bin/testbench bedrock:converse
 // -----------------------------------------------------------------------
 Artisan::command('bedrock:converse', function () {
@@ -65,7 +65,7 @@ Artisan::command('bedrock:converse', function () {
 })->purpose('Text generation with Amazon Nova Lite (Converse API)');
 
 // -----------------------------------------------------------------------
-// Streaming Text via Converse API (non-Anthropic model, e.g. Amazon Nova)
+// Streaming Text via Converse API (Amazon Nova)
 // vendor/bin/testbench bedrock:converse-stream
 // -----------------------------------------------------------------------
 Artisan::command('bedrock:converse-stream', function () {

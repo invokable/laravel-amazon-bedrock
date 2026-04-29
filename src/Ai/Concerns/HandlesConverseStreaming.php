@@ -6,6 +6,7 @@ namespace Revolution\Amazon\Bedrock\Ai\Concerns;
 
 use Aws\Api\Parser\NonSeekableStreamDecodingEventStreamIterator;
 use Generator;
+use Illuminate\Support\Str;
 use Laravel\Ai\Gateway\TextGenerationOptions;
 use Laravel\Ai\Providers\Provider;
 use Laravel\Ai\Responses\Data\ToolCall;
@@ -198,6 +199,8 @@ trait HandlesConverseStreaming
                 $usage = new Usage(
                     $usageData['inputTokens'] ?? 0,
                     $usageData['outputTokens'] ?? 0,
+                    $usageData['cacheWriteInputTokens'] ?? 0,
+                    $usageData['cacheReadInputTokens'] ?? 0,
                 );
             }
         }
@@ -364,5 +367,25 @@ trait HandlesConverseStreaming
 
             yield [$eventType, $eventData];
         }
+    }
+
+    /**
+     * Map raw streaming tool call data to ToolCall DTOs.
+     *
+     * @return array<ToolCall>
+     */
+    protected function mapStreamToolCalls(array $toolCalls): array
+    {
+        return array_map(fn (array $tc) => new ToolCall(
+            $tc['id'] ?? '',
+            $tc['name'] ?? '',
+            $tc['parsed_arguments'] ?? json_decode($tc['arguments'] ?? '{}', true) ?? [],
+            $tc['id'] ?? null,
+        ), array_values($toolCalls));
+    }
+
+    protected function generateEventId(): string
+    {
+        return strtolower((string) Str::uuid7());
     }
 }

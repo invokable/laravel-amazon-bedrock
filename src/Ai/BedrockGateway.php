@@ -20,20 +20,14 @@ use Laravel\Ai\Responses\TextResponse;
 class BedrockGateway implements AudioGateway, EmbeddingGateway, ImageGateway, RerankingGateway, TextGateway, TranscriptionGateway
 {
     use Concerns\BuildsConverseRequests;
-    use Concerns\BuildsTextRequests;
     use Concerns\CreatesBedrockClient;
-    use Concerns\DetectsModelApi;
     use Concerns\GeneratesAudio;
     use Concerns\GeneratesEmbeddings;
     use Concerns\GeneratesImages;
     use Concerns\GeneratesTranscriptions;
     use Concerns\HandlesConverseStreaming;
-    use Concerns\HandlesTextStreaming;
     use Concerns\MapsConverseAttachments;
-    use Concerns\MapsMessages;
-    use Concerns\MapsTools;
     use Concerns\ParsesConverseResponses;
-    use Concerns\ParsesTextResponses;
     use Concerns\Reranks;
     use HandlesFailoverErrors;
     use InvokesTools;
@@ -63,19 +57,7 @@ class BedrockGateway implements AudioGateway, EmbeddingGateway, ImageGateway, Re
         ?TextGenerationOptions $options = null,
         ?int $timeout = null,
     ): TextResponse {
-        if ($this->useConverseApi($model)) {
-            return $this->generateConverseText($provider, $model, $instructions, $messages, $tools, $schema, $options, $timeout);
-        }
-
-        $body = $this->buildTextRequestBody($provider, $model, $instructions, $messages, $tools, $schema, $options);
-
-        $response = $this->withErrorHandling(
-            $provider->name(),
-            fn () => $this->client($provider, $model, $timeout)
-                ->post($this->invokeUrl($model), $body),
-        );
-
-        return $this->parseTextResponse($response->json(), $provider, $model, filled($schema), $tools, $schema, $options, $body, $timeout);
+        return $this->generateConverseText($provider, $model, $instructions, $messages, $tools, $schema, $options, $timeout);
     }
 
     public function streamText(
@@ -89,37 +71,11 @@ class BedrockGateway implements AudioGateway, EmbeddingGateway, ImageGateway, Re
         ?TextGenerationOptions $options = null,
         ?int $timeout = null,
     ): Generator {
-        if ($this->useConverseApi($model)) {
-            yield from $this->streamConverseText($invocationId, $provider, $model, $instructions, $messages, $tools, $schema, $options, $timeout);
-
-            return;
-        }
-
-        $body = $this->buildTextRequestBody($provider, $model, $instructions, $messages, $tools, $schema, $options);
-
-        $response = $this->withErrorHandling(
-            $provider->name(),
-            fn () => $this->client($provider, $model, $timeout)
-                ->withOptions(['stream' => true])
-                ->post($this->streamUrl($model), $body),
-        );
-
-        yield from $this->processTextStream(
-            $invocationId,
-            $provider,
-            $model,
-            $tools,
-            $options,
-            $response->getBody(),
-            $body,
-            0,
-            null,
-            $timeout,
-        );
+        yield from $this->streamConverseText($invocationId, $provider, $model, $instructions, $messages, $tools, $schema, $options, $timeout);
     }
 
     /**
-     * Generate text using the Converse API for non-Anthropic models.
+     * Generate text using the Converse API.
      */
     protected function generateConverseText(
         TextProvider $provider,
@@ -143,7 +99,7 @@ class BedrockGateway implements AudioGateway, EmbeddingGateway, ImageGateway, Re
     }
 
     /**
-     * Stream text using the Converse API for non-Anthropic models.
+     * Stream text using the Converse API.
      */
     protected function streamConverseText(
         string $invocationId,

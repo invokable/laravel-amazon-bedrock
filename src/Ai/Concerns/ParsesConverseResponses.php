@@ -13,6 +13,7 @@ use Laravel\Ai\Responses\Data\FinishReason;
 use Laravel\Ai\Responses\Data\Meta;
 use Laravel\Ai\Responses\Data\Step;
 use Laravel\Ai\Responses\Data\ToolCall;
+use Laravel\Ai\Responses\Data\ToolResult;
 use Laravel\Ai\Responses\Data\Usage;
 use Laravel\Ai\Responses\StructuredTextResponse;
 use Laravel\Ai\Responses\TextResponse;
@@ -194,6 +195,37 @@ trait ParsesConverseResponses
     }
 
     /**
+     * Execute tool calls and return tool results.
+     *
+     * @param  array<ToolCall>  $toolCalls
+     * @return array<ToolResult>
+     */
+    protected function executeToolCalls(array $toolCalls, array $tools): array
+    {
+        $results = [];
+
+        foreach ($toolCalls as $toolCall) {
+            $tool = $this->findTool($toolCall->name, $tools);
+
+            if ($tool === null) {
+                continue;
+            }
+
+            $result = $this->executeTool($tool, $toolCall->arguments);
+
+            $results[] = new ToolResult(
+                $toolCall->id,
+                $toolCall->name,
+                $toolCall->arguments,
+                $result,
+                $toolCall->resultId,
+            );
+        }
+
+        return $results;
+    }
+
+    /**
      * Extract text from Converse API content blocks.
      */
     protected function extractConverseText(array $content): string
@@ -241,6 +273,8 @@ trait ParsesConverseResponses
         return new Usage(
             $usage['inputTokens'] ?? 0,
             $usage['outputTokens'] ?? 0,
+            $usage['cacheWriteInputTokens'] ?? 0,
+            $usage['cacheReadInputTokens'] ?? 0,
         );
     }
 
@@ -280,5 +314,16 @@ trait ParsesConverseResponses
 
             return $block;
         }, $content);
+    }
+
+    /**
+     * Combine usage across all steps.
+     */
+    protected function combineUsage(Collection $steps): Usage
+    {
+        return $steps->reduce(
+            fn (Usage $carry, Step $step) => $carry->add($step->usage),
+            new Usage(0, 0)
+        );
     }
 }

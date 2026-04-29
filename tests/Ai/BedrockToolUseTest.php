@@ -34,23 +34,25 @@ function makeToolTestProvider(array $config = []): BedrockProvider
 function fakeToolUseResponse(string $toolCallId = 'toolu_01', string $toolName = 'GetWeather', array $input = ['city' => 'Tokyo']): array
 {
     return [
-        'id' => 'msg_test_tool',
-        'type' => 'message',
-        'role' => 'assistant',
-        'model' => 'anthropic.claude-3-haiku-20240307-v1:0',
-        'content' => [
-            ['type' => 'text', 'text' => 'Let me check the weather for you.'],
-            [
-                'type' => 'tool_use',
-                'id' => $toolCallId,
-                'name' => $toolName,
-                'input' => $input,
+        'output' => [
+            'message' => [
+                'role' => 'assistant',
+                'content' => [
+                    ['text' => 'Let me check the weather for you.'],
+                    [
+                        'toolUse' => [
+                            'toolUseId' => $toolCallId,
+                            'name' => $toolName,
+                            'input' => $input,
+                        ],
+                    ],
+                ],
             ],
         ],
-        'stop_reason' => 'tool_use',
+        'stopReason' => 'tool_use',
         'usage' => [
-            'input_tokens' => 100,
-            'output_tokens' => 50,
+            'inputTokens' => 100,
+            'outputTokens' => 50,
         ],
     ];
 }
@@ -58,17 +60,37 @@ function fakeToolUseResponse(string $toolCallId = 'toolu_01', string $toolName =
 function fakeTextAfterToolResponse(string $text = 'The weather in Tokyo is sunny, 25°C.'): array
 {
     return [
-        'id' => 'msg_test_final',
-        'type' => 'message',
-        'role' => 'assistant',
-        'model' => 'anthropic.claude-3-haiku-20240307-v1:0',
-        'content' => [
-            ['type' => 'text', 'text' => $text],
+        'output' => [
+            'message' => [
+                'role' => 'assistant',
+                'content' => [
+                    ['text' => $text],
+                ],
+            ],
         ],
-        'stop_reason' => 'end_turn',
+        'stopReason' => 'end_turn',
         'usage' => [
-            'input_tokens' => 200,
-            'output_tokens' => 30,
+            'inputTokens' => 200,
+            'outputTokens' => 30,
+        ],
+    ];
+}
+
+function fakeToolTextResponse(string $text = 'Hello!', int $inputTokens = 10, int $outputTokens = 5): array
+{
+    return [
+        'output' => [
+            'message' => [
+                'role' => 'assistant',
+                'content' => [
+                    ['text' => $text],
+                ],
+            ],
+        ],
+        'stopReason' => 'end_turn',
+        'usage' => [
+            'inputTokens' => $inputTokens,
+            'outputTokens' => $outputTokens,
         ],
     ];
 }
@@ -101,15 +123,7 @@ function createGetWeatherTool(): Tool
 describe('BedrockGateway tool use - generateText', function () {
     test('includes tool definitions in request body', function () {
         Http::fake([
-            'bedrock-runtime.us-east-1.amazonaws.com/*' => Http::response([
-                'id' => 'msg_test',
-                'type' => 'message',
-                'role' => 'assistant',
-                'model' => 'anthropic.claude-3-haiku-20240307-v1:0',
-                'content' => [['type' => 'text', 'text' => 'Hello!']],
-                'stop_reason' => 'end_turn',
-                'usage' => ['input_tokens' => 10, 'output_tokens' => 5],
-            ]),
+            'bedrock-runtime.us-east-1.amazonaws.com/*' => Http::response(fakeToolTextResponse()),
         ]);
 
         $gateway = new BedrockGateway;
@@ -126,12 +140,13 @@ describe('BedrockGateway tool use - generateText', function () {
         Http::assertSent(function ($request) {
             $body = $request->data();
 
-            return isset($body['tools'])
-                && count($body['tools']) === 1
-                && $body['tools'][0]['name'] === 'GetWeather'
-                && $body['tools'][0]['description'] === 'Get current weather for a city.'
-                && isset($body['tools'][0]['input_schema'])
-                && $body['tool_choice'] === ['type' => 'auto'];
+            $tool = $body['toolConfig']['tools'][0]['toolSpec'] ?? null;
+
+            return $tool !== null
+                && $tool['name'] === 'GetWeather'
+                && $tool['description'] === 'Get current weather for a city.'
+                && isset($tool['inputSchema']['json'])
+                && isset($body['toolConfig']['toolChoice']['auto']);
         });
     });
 
@@ -189,11 +204,10 @@ describe('BedrockGateway tool use - generateText', function () {
         $secondBody = $requests[1][0]->data();
         $messages = $secondBody['messages'];
 
-        // Should have: original user message, assistant tool_use, user tool_result
+        // Should have: original user message, assistant toolUse, user toolResult
         $lastMessage = end($messages);
         expect($lastMessage['role'])->toBe('user')
-            ->and($lastMessage['content'][0]['type'])->toBe('tool_result')
-            ->and($lastMessage['content'][0]['tool_use_id'])->toBe('toolu_01');
+            ->and($lastMessage['content'][0]['toolResult']['toolUseId'])->toBe('toolu_01');
     });
 
     test('tracks steps across tool call iterations', function () {
@@ -317,15 +331,7 @@ describe('BedrockGateway tool use - generateText', function () {
 
     test('handles response with no tool calls', function () {
         Http::fake([
-            'bedrock-runtime.us-east-1.amazonaws.com/*' => Http::response([
-                'id' => 'msg_test',
-                'type' => 'message',
-                'role' => 'assistant',
-                'model' => 'anthropic.claude-3-haiku-20240307-v1:0',
-                'content' => [['type' => 'text', 'text' => 'Hello!']],
-                'stop_reason' => 'end_turn',
-                'usage' => ['input_tokens' => 10, 'output_tokens' => 5],
-            ]),
+            'bedrock-runtime.us-east-1.amazonaws.com/*' => Http::response(fakeToolTextResponse()),
         ]);
 
         $gateway = new BedrockGateway;
@@ -347,15 +353,7 @@ describe('BedrockGateway tool use - generateText', function () {
 
     test('does not include tools in body when no tools given', function () {
         Http::fake([
-            'bedrock-runtime.us-east-1.amazonaws.com/*' => Http::response([
-                'id' => 'msg_test',
-                'type' => 'message',
-                'role' => 'assistant',
-                'model' => 'anthropic.claude-3-haiku-20240307-v1:0',
-                'content' => [['type' => 'text', 'text' => 'Hi']],
-                'stop_reason' => 'end_turn',
-                'usage' => ['input_tokens' => 10, 'output_tokens' => 5],
-            ]),
+            'bedrock-runtime.us-east-1.amazonaws.com/*' => Http::response(fakeToolTextResponse('Hi')),
         ]);
 
         $gateway = new BedrockGateway;
@@ -369,23 +367,15 @@ describe('BedrockGateway tool use - generateText', function () {
         Http::assertSent(function ($request) {
             $body = $request->data();
 
-            return ! isset($body['tools']) && ! isset($body['tool_choice']);
+            return ! isset($body['toolConfig']);
         });
     });
 });
 
-describe('BedrockGateway tool use - MapsMessages', function () {
+describe('BedrockGateway tool use - Converse messages', function () {
     test('maps AssistantMessage with tool calls', function () {
         Http::fake([
-            'bedrock-runtime.us-east-1.amazonaws.com/*' => Http::response([
-                'id' => 'msg_test',
-                'type' => 'message',
-                'role' => 'assistant',
-                'model' => 'anthropic.claude-3-haiku-20240307-v1:0',
-                'content' => [['type' => 'text', 'text' => 'Done']],
-                'stop_reason' => 'end_turn',
-                'usage' => ['input_tokens' => 10, 'output_tokens' => 5],
-            ]),
+            'bedrock-runtime.us-east-1.amazonaws.com/*' => Http::response(fakeToolTextResponse('Done')),
         ]);
 
         $gateway = new BedrockGateway;
@@ -419,20 +409,18 @@ describe('BedrockGateway tool use - MapsMessages', function () {
             $userMsg = $messages[0];
             expect($userMsg['role'])->toBe('user');
 
-            // Message 1: assistant with tool_use
+            // Message 1: assistant with toolUse
             $assistMsg = $messages[1];
             expect($assistMsg['role'])->toBe('assistant')
                 ->and($assistMsg['content'])->toHaveCount(2)
-                ->and($assistMsg['content'][0]['type'])->toBe('text')
-                ->and($assistMsg['content'][1]['type'])->toBe('tool_use')
-                ->and($assistMsg['content'][1]['id'])->toBe('toolu_01')
-                ->and($assistMsg['content'][1]['name'])->toBe('GetWeather');
+                ->and($assistMsg['content'][0]['text'])->toBe('I will check the weather.')
+                ->and($assistMsg['content'][1]['toolUse']['toolUseId'])->toBe('toolu_01')
+                ->and($assistMsg['content'][1]['toolUse']['name'])->toBe('GetWeather');
 
-            // Message 2: tool_result
+            // Message 2: toolResult
             $toolMsg = $messages[2];
             expect($toolMsg['role'])->toBe('user')
-                ->and($toolMsg['content'][0]['type'])->toBe('tool_result')
-                ->and($toolMsg['content'][0]['tool_use_id'])->toBe('toolu_01');
+                ->and($toolMsg['content'][0]['toolResult']['toolUseId'])->toBe('toolu_01');
 
             // Message 3: user follow-up
             expect($messages[3]['role'])->toBe('user');
@@ -442,18 +430,10 @@ describe('BedrockGateway tool use - MapsMessages', function () {
     });
 });
 
-describe('BedrockGateway tool use - MapsTools', function () {
-    test('maps tool with schema to Anthropic format', function () {
+describe('BedrockGateway tool use - Converse tools', function () {
+    test('maps tool with schema to Converse format', function () {
         Http::fake([
-            'bedrock-runtime.us-east-1.amazonaws.com/*' => Http::response([
-                'id' => 'msg_test',
-                'type' => 'message',
-                'role' => 'assistant',
-                'model' => 'anthropic.claude-3-haiku-20240307-v1:0',
-                'content' => [['type' => 'text', 'text' => 'OK']],
-                'stop_reason' => 'end_turn',
-                'usage' => ['input_tokens' => 10, 'output_tokens' => 5],
-            ]),
+            'bedrock-runtime.us-east-1.amazonaws.com/*' => Http::response(fakeToolTextResponse('OK')),
         ]);
 
         $gateway = new BedrockGateway;
@@ -489,27 +469,19 @@ describe('BedrockGateway tool use - MapsTools', function () {
 
         Http::assertSent(function ($request) {
             $body = $request->data();
-            $toolDef = $body['tools'][0] ?? null;
+            $toolDef = $body['toolConfig']['tools'][0]['toolSpec'] ?? null;
 
             return $toolDef !== null
                 && str_ends_with($toolDef['name'], (string) class_basename($toolDef['name']))
                 && $toolDef['description'] === 'Search for items.'
-                && $toolDef['input_schema']['type'] === 'object'
-                && isset($toolDef['input_schema']['properties']);
+                && $toolDef['inputSchema']['json']['type'] === 'object'
+                && isset($toolDef['inputSchema']['json']['properties']);
         });
     });
 
     test('maps tool without schema', function () {
         Http::fake([
-            'bedrock-runtime.us-east-1.amazonaws.com/*' => Http::response([
-                'id' => 'msg_test',
-                'type' => 'message',
-                'role' => 'assistant',
-                'model' => 'anthropic.claude-3-haiku-20240307-v1:0',
-                'content' => [['type' => 'text', 'text' => 'OK']],
-                'stop_reason' => 'end_turn',
-                'usage' => ['input_tokens' => 10, 'output_tokens' => 5],
-            ]),
+            'bedrock-runtime.us-east-1.amazonaws.com/*' => Http::response(fakeToolTextResponse('OK')),
         ]);
 
         $gateway = new BedrockGateway;
@@ -542,17 +514,17 @@ describe('BedrockGateway tool use - MapsTools', function () {
 
         Http::assertSent(function ($request) {
             $body = $request->data();
-            $toolDef = $body['tools'][0] ?? null;
+            $toolDef = $body['toolConfig']['tools'][0]['toolSpec'] ?? null;
 
             return $toolDef !== null
-                && $toolDef['input_schema']['type'] === 'object'
-                && empty((array) $toolDef['input_schema']['properties']);
+                && $toolDef['inputSchema']['json']['type'] === 'object'
+                && empty((array) $toolDef['inputSchema']['json']['properties']);
         });
     });
 });
 
 describe('BedrockGateway tool use - finish reason extraction', function () {
-    test('maps stop_reason tool_use to FinishReason::ToolCalls', function () {
+    test('maps stopReason tool_use to FinishReason::ToolCalls', function () {
         Http::fake([
             'bedrock-runtime.us-east-1.amazonaws.com/*' => Http::response(fakeToolUseResponse()),
         ]);
@@ -571,7 +543,7 @@ describe('BedrockGateway tool use - finish reason extraction', function () {
         expect($response->steps->first()->finishReason)->toBe(FinishReason::ToolCalls);
     });
 
-    test('maps stop_reason end_turn to FinishReason::Stop', function () {
+    test('maps stopReason end_turn to FinishReason::Stop', function () {
         Http::fake([
             'bedrock-runtime.us-east-1.amazonaws.com/*' => Http::response(fakeTextAfterToolResponse()),
         ]);
@@ -588,16 +560,19 @@ describe('BedrockGateway tool use - finish reason extraction', function () {
         expect($response->steps->first()->finishReason)->toBe(FinishReason::Stop);
     });
 
-    test('maps stop_reason max_tokens to FinishReason::Length', function () {
+    test('maps stopReason max_tokens to FinishReason::Length', function () {
         Http::fake([
             'bedrock-runtime.us-east-1.amazonaws.com/*' => Http::response([
-                'id' => 'msg_test',
-                'type' => 'message',
-                'role' => 'assistant',
-                'model' => 'anthropic.claude-3-haiku-20240307-v1:0',
-                'content' => [['type' => 'text', 'text' => 'Truncated']],
-                'stop_reason' => 'max_tokens',
-                'usage' => ['input_tokens' => 10, 'output_tokens' => 100],
+                'output' => [
+                    'message' => [
+                        'role' => 'assistant',
+                        'content' => [
+                            ['text' => 'Truncated'],
+                        ],
+                    ],
+                ],
+                'stopReason' => 'max_tokens',
+                'usage' => ['inputTokens' => 10, 'outputTokens' => 100],
             ]),
         ]);
 
