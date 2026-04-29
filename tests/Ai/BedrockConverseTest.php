@@ -4,12 +4,18 @@ declare(strict_types=1);
 
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
+use Illuminate\Http\UploadedFile;
 use Illuminate\JsonSchema\JsonSchemaTypeFactory;
 use Illuminate\Support\Facades\Http;
 use Laravel\Ai\Contracts\Tool;
 use Laravel\Ai\Enums\Lab;
+use Laravel\Ai\Files\Audio;
+use Laravel\Ai\Files\Document;
+use Laravel\Ai\Files\Image;
+use Laravel\Ai\Files\ProviderImage;
 use Laravel\Ai\Gateway\TextGenerationOptions;
 use Laravel\Ai\Messages\Message;
+use Laravel\Ai\Messages\UserMessage;
 use Laravel\Ai\Providers\Provider;
 use Laravel\Ai\Responses\Data\FinishReason;
 use Laravel\Ai\Responses\StructuredTextResponse;
@@ -671,6 +677,115 @@ describe('Converse API request format', function () {
             return ($body['inferenceConfig']['maxTokens'] ?? null) === 4096;
         });
     });
+
+    test('maps image attachments to Converse image blocks', function () {
+        Http::fake([
+            'bedrock-runtime.us-east-1.amazonaws.com/*' => Http::response(fakeConverseResponse()),
+        ]);
+
+        $gateway = new BedrockGateway;
+        $gateway->generateText(
+            provider: makeConverseProvider(),
+            model: 'amazon.nova-pro-v1:0',
+            instructions: null,
+            messages: [new UserMessage('Describe this image', [
+                Image::fromBase64(base64_encode('fake-image'), 'image/png'),
+            ])],
+        );
+
+        Http::assertSent(function ($request) {
+            $body = json_decode($request->body(), true);
+            $content = $body['messages'][0]['content'] ?? [];
+
+            return ($content[0]['image']['format'] ?? null) === 'png'
+                && ($content[0]['image']['source']['bytes'] ?? null) === base64_encode('fake-image')
+                && ($content[1]['text'] ?? null) === 'Describe this image';
+        });
+    });
+
+    test('maps document attachments to Converse document blocks with safe names', function () {
+        Http::fake([
+            'bedrock-runtime.us-east-1.amazonaws.com/*' => Http::response(fakeConverseResponse()),
+        ]);
+
+        $gateway = new BedrockGateway;
+        $gateway->generateText(
+            provider: makeConverseProvider(),
+            model: 'amazon.nova-pro-v1:0',
+            instructions: null,
+            messages: [new UserMessage('Summarize this document', [
+                Document::fromString('document text', 'text/plain')->as('Quarterly_Report!.txt'),
+            ])],
+        );
+
+        Http::assertSent(function ($request) {
+            $body = json_decode($request->body(), true);
+            $document = $body['messages'][0]['content'][0]['document'] ?? [];
+
+            return ($document['format'] ?? null) === 'txt'
+                && ($document['name'] ?? null) === 'Quarterly Report'
+                && ($document['source']['bytes'] ?? null) === base64_encode('document text');
+        });
+    });
+
+    test('maps audio attachments to Converse audio blocks', function () {
+        Http::fake([
+            'bedrock-runtime.us-east-1.amazonaws.com/*' => Http::response(fakeConverseResponse()),
+        ]);
+
+        $gateway = new BedrockGateway;
+        $gateway->generateText(
+            provider: makeConverseProvider(),
+            model: 'amazon.nova-pro-v1:0',
+            instructions: null,
+            messages: [new UserMessage('Transcribe then answer', [
+                Audio::fromBase64(base64_encode('fake-audio'), 'audio/webm'),
+            ])],
+        );
+
+        Http::assertSent(function ($request) {
+            $body = json_decode($request->body(), true);
+            $audio = $body['messages'][0]['content'][0]['audio'] ?? [];
+
+            return ($audio['format'] ?? null) === 'webm'
+                && ($audio['source']['bytes'] ?? null) === base64_encode('fake-audio');
+        });
+    });
+
+    test('maps uploaded video attachments to Converse video blocks', function () {
+        Http::fake([
+            'bedrock-runtime.us-east-1.amazonaws.com/*' => Http::response(fakeConverseResponse()),
+        ]);
+
+        $video = UploadedFile::fake()->create('demo.mp4', 1, 'video/mp4');
+
+        $gateway = new BedrockGateway;
+        $gateway->generateText(
+            provider: makeConverseProvider(),
+            model: 'amazon.nova-pro-v1:0',
+            instructions: null,
+            messages: [new UserMessage('Describe this video', [$video])],
+        );
+
+        Http::assertSent(function ($request) {
+            $body = json_decode($request->body(), true);
+            $video = $body['messages'][0]['content'][0]['video'] ?? [];
+
+            return ($video['format'] ?? null) === 'mp4'
+                && isset($video['source']['bytes']);
+        });
+    });
+
+    test('rejects unsupported provider file attachments for Converse', function () {
+        $gateway = new BedrockGateway;
+
+        $gateway->generateText(
+            provider: makeConverseProvider(),
+            model: 'amazon.nova-pro-v1:0',
+            instructions: null,
+            messages: [new UserMessage('Describe this image', [Image::fromId('file_123')])],
+        );
+    })->throws(InvalidArgumentException::class, 'Unsupported attachment type ['.ProviderImage::class.']');
 });
 
 describe('Converse stream event parsing', function () {

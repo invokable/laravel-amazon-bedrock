@@ -11,6 +11,7 @@ use Laravel\Ai\Messages\AssistantMessage;
 use Laravel\Ai\Messages\Message;
 use Laravel\Ai\Messages\MessageRole;
 use Laravel\Ai\Messages\ToolResultMessage;
+use Laravel\Ai\Messages\UserMessage;
 use Laravel\Ai\ObjectSchema;
 use Laravel\Ai\Providers\Provider;
 
@@ -98,13 +99,20 @@ trait BuildsConverseRequests
         return $mapped;
     }
 
-    protected function mapConverseUserMessage(Message $message, array &$mapped): void
+    protected function mapConverseUserMessage(UserMessage|Message $message, array &$mapped): void
     {
+        $content = [
+            ['text' => $message->content],
+        ];
+
+        if ($message instanceof UserMessage && $message->attachments->isNotEmpty()) {
+            // Bedrock Converse examples place media and document blocks before the prompt text.
+            $content = array_merge($this->mapConverseAttachments($message->attachments), $content);
+        }
+
         $mapped[] = [
             'role' => 'user',
-            'content' => [
-                ['text' => $message->content],
-            ],
+            'content' => $content,
         ];
     }
 
