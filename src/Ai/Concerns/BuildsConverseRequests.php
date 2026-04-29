@@ -70,7 +70,7 @@ trait BuildsConverseRequests
         unset($providerOptions['anthropic_version']);
         unset($providerOptions['additionalModelRequestFields']);
 
-        $additionalFields = array_merge($additionalFields, $providerOptions);
+        $additionalFields = $this->mergeProviderOptionsIntoAdditionalFields($additionalFields, $providerOptions);
 
         if (filled($additionalFields)) {
             $body['additionalModelRequestFields'] = $additionalFields;
@@ -82,6 +82,9 @@ trait BuildsConverseRequests
     /**
      * Build a Converse system prompt with a prompt cache checkpoint.
      *
+     * The cachePoint block tells Bedrock to cache the preceding static
+     * system prompt prefix for reuse in subsequent Converse API calls.
+     *
      * @return array<int, array<string, mixed>>
      */
     protected function buildConverseSystemPrompt(string $instructions): array
@@ -90,6 +93,14 @@ trait BuildsConverseRequests
             ['text' => $instructions],
             ['cachePoint' => ['type' => 'default']],
         ];
+    }
+
+    /**
+     * Pass remaining provider-specific options through Converse additionalModelRequestFields.
+     */
+    protected function mergeProviderOptionsIntoAdditionalFields(array $additionalFields, array $providerOptions): array
+    {
+        return array_merge($additionalFields, $providerOptions);
     }
 
     /**
