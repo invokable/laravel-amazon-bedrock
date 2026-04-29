@@ -132,5 +132,4 @@ trait CreatesBedrockClient
     {
         return "model/{$model}/converse-stream";
     }
-
 }
