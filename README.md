@@ -21,7 +21,13 @@ An Amazon Bedrock driver for the [Laravel AI SDK](https://laravel.com/docs/ai-sd
 | Transcription(STT) | ❌       | Not supported                                                                                                |
 | Embeddings         | ✅       | Amazon Titan Embeddings V2 (default), Cohere Embed English/Multilingual V3, Cohere Embed V4 (batch support). |
 | Reranking          | ⚠️      | Cohere Rerank 3.5, Amazon Rerank 1.0                                                                         |
-| Files              | ⚠️      | Local file attachments supported via text generation; server-side upload and `fromId()` not supported        |
+| Files              | ✅️      | Local file attachments supported via text generation; server-side upload and `fromId()` not supported        |
+
+> [!INFO]
+> ⚠️ in this table means the feature is not available with only a Bedrock API key. It does not mean the feature itself is unsupported.
+
+> [!INFO]
+> Laravel AI SDK v0.6.3 added official Bedrock support for Text, Image, and Embeddings using a Bedrock API key. This package continues to be published because it also supports Audio (TTS via Amazon Polly) and Reranking — features not available through the official integration.
 
 - **Authentication**: Bedrock API key, AWS IAM credentials (SigV4), or default AWS credential chain (IAM roles, instance profiles, etc.).
 - **Failover**: Supports the AI SDK's multi-provider failover. Rate limit (429), overload (503, 529), and credit errors are mapped to failoverable exceptions.
