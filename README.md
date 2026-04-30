@@ -474,7 +474,7 @@ use function Laravel\Ai\agent;
 // Anthropic Claude (uses Converse API)
 $response = agent(
     instructions: 'You are an expert at software development.',
-    model: 'anthropic.claude-sonnet-4-5',
+    model: 'global.anthropic.claude-sonnet-4-6',
 )->prompt('Tell me about Laravel.');
 
 // Amazon Nova
