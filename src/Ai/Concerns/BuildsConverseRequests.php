@@ -14,6 +14,7 @@ use Laravel\Ai\Messages\ToolResultMessage;
 use Laravel\Ai\Messages\UserMessage;
 use Laravel\Ai\ObjectSchema;
 use Laravel\Ai\Providers\Provider;
+use Laravel\Ai\Tools\ToolNameResolver;
 
 trait BuildsConverseRequests
 {
@@ -47,6 +48,10 @@ trait BuildsConverseRequests
 
         if ($options?->temperature !== null) {
             $inferenceConfig['temperature'] = $options->temperature;
+        }
+
+        if ($options?->topP !== null) {
+            $inferenceConfig['topP'] = $options->topP;
         }
 
         if (filled($inferenceConfig)) {
@@ -237,7 +242,7 @@ trait BuildsConverseRequests
 
         return [
             'toolSpec' => [
-                'name' => class_basename($tool),
+                'name' => ToolNameResolver::resolve($tool),
                 'description' => (string) $tool->description(),
                 'inputSchema' => [
                     'json' => $inputSchema,
