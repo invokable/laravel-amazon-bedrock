@@ -23,13 +23,14 @@ trait GeneratesEmbeddings
         string $model,
         array $inputs,
         int $dimensions,
-        ?int $timeout = null,
+        int $timeout = 30,
+        array $providerOptions = [],
     ): EmbeddingsResponse {
         if ($this->isCohereEmbedModel($model)) {
-            return $this->generateCohereEmbeddings($provider, $model, $inputs, $dimensions, $timeout);
+            return $this->generateCohereEmbeddings($provider, $model, $inputs, $dimensions, $timeout, $providerOptions);
         }
 
-        return $this->generateTitanEmbeddings($provider, $model, $inputs, $dimensions, $timeout);
+        return $this->generateTitanEmbeddings($provider, $model, $inputs, $dimensions, $timeout, $providerOptions);
     }
 
     /**
@@ -42,7 +43,8 @@ trait GeneratesEmbeddings
         string $model,
         array $inputs,
         int $dimensions,
-        ?int $timeout = null,
+        int $timeout = 30,
+        array $providerOptions = [],
     ): EmbeddingsResponse {
         $embeddings = [];
         $totalTokens = 0;
@@ -51,11 +53,11 @@ trait GeneratesEmbeddings
             $response = $this->withErrorHandling(
                 $provider->name(),
                 fn () => $this->client($provider, $model, $timeout)
-                    ->post($this->invokeUrl($model), [
+                    ->post($this->invokeUrl($model), array_merge([
                         'inputText' => $input,
                         'dimensions' => $dimensions,
                         'normalize' => true,
-                    ]),
+                    ], $providerOptions)),
             )->json();
 
             $embeddings[] = $response['embedding'] ?? [];
@@ -83,13 +85,14 @@ trait GeneratesEmbeddings
         string $model,
         array $inputs,
         int $dimensions,
-        ?int $timeout = null,
+        int $timeout = 30,
+        array $providerOptions = [],
     ): EmbeddingsResponse {
-        $body = [
+        $body = array_merge([
             'texts' => array_values($inputs),
             'input_type' => 'search_document',
             'embedding_types' => ['float'],
-        ];
+        ], $providerOptions);
 
         if ($this->isCohereEmbedV4($model)) {
             $body['output_dimension'] = $dimensions;
