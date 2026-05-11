@@ -24,7 +24,7 @@ trait GeneratesEmbeddings
         array $inputs,
         int $dimensions,
         int $timeout = 30,
-        array $providerOptions = [],
+        array $_providerOptions = [],
     ): EmbeddingsResponse {
         if ($this->isCohereEmbedModel($model)) {
             return $this->generateCohereEmbeddings($provider, $model, $inputs, $dimensions, $timeout);
