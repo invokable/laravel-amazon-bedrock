@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use Tests\TestCase;
 use Illuminate\Contracts\Events\Dispatcher;
 use Revolution\Amazon\Bedrock\Ai\BedrockProvider;
+use Tests\TestCase;
 
 uses(TestCase::class)->in('Feature', 'Ai');
 
