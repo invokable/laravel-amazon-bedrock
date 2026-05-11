@@ -2,27 +2,12 @@
 
 declare(strict_types=1);
 
-use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Facades\Http;
 use Laravel\Ai\Enums\Lab;
 use Laravel\Ai\Gateway\TextGenerationOptions;
 use Laravel\Ai\Messages\Message;
 use Laravel\Ai\Responses\TextResponse;
 use Revolution\Amazon\Bedrock\Ai\BedrockGateway;
-use Revolution\Amazon\Bedrock\Ai\BedrockProvider;
-
-function makeProvider(array $config = []): BedrockProvider
-{
-    return new BedrockProvider(
-        config: array_merge([
-            'name' => 'bedrock',
-            'driver' => 'bedrock',
-            'key' => 'test-api-key',
-            'region' => 'us-east-1',
-        ], $config),
-        events: app(Dispatcher::class),
-    );
-}
 
 function makeOptionsWithProviderOptions(array $providerOptions, ?int $maxTokens = null, ?float $temperature = null): TextGenerationOptions
 {
