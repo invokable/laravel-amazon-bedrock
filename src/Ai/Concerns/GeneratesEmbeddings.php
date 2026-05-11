@@ -23,7 +23,8 @@ trait GeneratesEmbeddings
         string $model,
         array $inputs,
         int $dimensions,
-        ?int $timeout = null,
+        int $timeout = 30,
+        array $providerOptions = [],
     ): EmbeddingsResponse {
         if ($this->isCohereEmbedModel($model)) {
             return $this->generateCohereEmbeddings($provider, $model, $inputs, $dimensions, $timeout);
@@ -42,7 +43,7 @@ trait GeneratesEmbeddings
         string $model,
         array $inputs,
         int $dimensions,
-        ?int $timeout = null,
+        int $timeout = 30,
     ): EmbeddingsResponse {
         $embeddings = [];
         $totalTokens = 0;
@@ -83,7 +84,7 @@ trait GeneratesEmbeddings
         string $model,
         array $inputs,
         int $dimensions,
-        ?int $timeout = null,
+        int $timeout = 30,
     ): EmbeddingsResponse {
         $body = [
             'texts' => array_values($inputs),
