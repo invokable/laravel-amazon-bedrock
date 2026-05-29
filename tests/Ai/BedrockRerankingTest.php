@@ -253,7 +253,7 @@ describe('BedrockGateway rerank', function () {
             query: 'query',
         );
 
-        expect($response->meta->provider)->toBe('bedrock');
+        expect($response->meta->provider)->toBe('amazon-bedrock');
         expect($response->meta->model)->toBe('cohere.rerank-v3-5:0');
     });
 
