@@ -227,7 +227,7 @@ describe('BedrockGateway generateImage', function () {
             prompt: 'A cat',
         );
 
-        expect($response->meta->provider)->toBe('bedrock');
+        expect($response->meta->provider)->toBe('amazon-bedrock');
         expect($response->meta->model)->toBe('amazon.nova-canvas-v1:0');
     });
 
@@ -371,7 +371,7 @@ describe('BedrockGateway generateImage (Stability AI)', function () {
             prompt: 'A cat',
         );
 
-        expect($response->meta->provider)->toBe('bedrock');
+        expect($response->meta->provider)->toBe('amazon-bedrock');
         expect($response->meta->model)->toBe('stability.sd3-5-large-v1:0');
     });
 

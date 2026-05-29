@@ -12,8 +12,8 @@ function makeProvider(array $config = []): BedrockProvider
 {
     return new BedrockProvider(
         config: array_merge([
-            'name' => 'bedrock',
-            'driver' => 'bedrock',
+            'name' => 'amazon-bedrock',
+            'driver' => 'amazon-bedrock',
             'key' => 'test-api-key',
             'region' => 'us-east-1',
         ], $config),

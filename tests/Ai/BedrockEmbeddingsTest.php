@@ -167,7 +167,7 @@ describe('BedrockGateway generateEmbeddings', function () {
             dimensions: 1024,
         );
 
-        expect($response->meta->provider)->toBe('bedrock');
+        expect($response->meta->provider)->toBe('amazon-bedrock');
         expect($response->meta->model)->toBe('amazon.titan-embed-text-v2:0');
     });
 });
@@ -316,7 +316,7 @@ describe('BedrockGateway generateEmbeddings (Cohere Embed v3)', function () {
             dimensions: 1024,
         );
 
-        expect($response->meta->provider)->toBe('bedrock');
+        expect($response->meta->provider)->toBe('amazon-bedrock');
         expect($response->meta->model)->toBe('cohere.embed-english-v3');
     });
 

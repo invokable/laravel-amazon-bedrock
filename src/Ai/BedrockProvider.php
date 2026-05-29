@@ -45,7 +45,8 @@ class BedrockProvider extends Provider implements AudioProvider, EmbeddingProvid
     public function __construct(
         protected array $config,
         protected Dispatcher $events,
-    ) {}
+    ) {
+    }
 
     public function textGateway(): TextGateway
     {
@@ -67,11 +68,6 @@ class BedrockProvider extends Provider implements AudioProvider, EmbeddingProvid
         return $this->config['models']['text']['default'] ?? 'global.anthropic.claude-sonnet-4-6';
     }
 
-    public function defaultAudioModel(): string
-    {
-        return $this->config['models']['audio']['default'] ?? 'generative';
-    }
-
     public function cheapestTextModel(): string
     {
         return $this->config['models']['text']['cheapest'] ?? 'global.anthropic.claude-haiku-4-5-20251001-v1:0';
@@ -79,7 +75,12 @@ class BedrockProvider extends Provider implements AudioProvider, EmbeddingProvid
 
     public function smartestTextModel(): string
     {
-        return $this->config['models']['text']['smartest'] ?? 'global.anthropic.claude-opus-4-7';
+        return $this->config['models']['text']['smartest'] ?? 'global.anthropic.claude-opus-4-8';
+    }
+
+    public function defaultImageModel(): string
+    {
+        return $this->config['models']['image']['default'] ?? 'stability.stable-image-core-v1:1';
     }
 
     public function defaultEmbeddingsModel(): string
@@ -92,24 +93,24 @@ class BedrockProvider extends Provider implements AudioProvider, EmbeddingProvid
         return (int) ($this->config['models']['embeddings']['dimensions'] ?? 1024);
     }
 
+    public function defaultRerankingModel(): string
+    {
+        return $this->config['models']['reranking']['default'] ?? 'cohere.rerank-v3-5:0';
+    }
+
+    public function defaultAudioModel(): string
+    {
+        return $this->config['models']['audio']['default'] ?? 'generative';
+    }
+
     public function imageGateway(): ImageGateway
     {
         return $this->imageGateway ??= new BedrockGateway;
     }
 
-    public function defaultImageModel(): string
-    {
-        return $this->config['models']['image']['default'] ?? 'stability.stable-image-core-v1:1';
-    }
-
     public function rerankingGateway(): RerankingGateway
     {
         return $this->rerankingGateway ??= new BedrockGateway;
-    }
-
-    public function defaultRerankingModel(): string
-    {
-        return $this->config['models']['reranking']['default'] ?? 'cohere.rerank-v3-5:0';
     }
 
     /**
