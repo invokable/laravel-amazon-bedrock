@@ -45,8 +45,7 @@ class BedrockProvider extends Provider implements AudioProvider, EmbeddingProvid
     public function __construct(
         protected array $config,
         protected Dispatcher $events,
-    ) {
-    }
+    ) {}
 
     public function textGateway(): TextGateway
     {
