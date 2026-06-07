@@ -14,6 +14,7 @@ permissions:
 
 engine:
   id: copilot
+  model: auto
 
 checkout:
   ref: main
