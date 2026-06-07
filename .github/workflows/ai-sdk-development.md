@@ -14,7 +14,7 @@ permissions:
 
 engine:
   id: copilot
-  model: auto
+  model: haiku
 
 checkout:
   ref: main
