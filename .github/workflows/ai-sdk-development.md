@@ -21,7 +21,7 @@ checkout:
 
 steps:
     -   name: Set up PHP
-        uses: shivammathur/setup-php@2.37.1
+        uses: shivammathur/setup-php@2.37.2
         with:
             php-version: 8.5
             extensions: mbstring, dom
