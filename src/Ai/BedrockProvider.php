@@ -74,7 +74,7 @@ class BedrockProvider extends Provider implements AudioProvider, EmbeddingProvid
 
     public function smartestTextModel(): string
     {
-        return $this->config['models']['text']['smartest'] ?? 'global.anthropic.claude-fable-5';
+        return $this->config['models']['text']['smartest'] ?? 'global.anthropic.claude-opus-4-8';
     }
 
     public function defaultImageModel(): string

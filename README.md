@@ -133,7 +133,7 @@ The default credential chain automatically resolves credentials from environment
 | `max_tokens`                   | Default max tokens per request  | 8096                                              |
 | `models.text.default`          | Default text model              | `global.anthropic.claude-sonnet-4-6`              |
 | `models.text.cheapest`         | Cheapest text model             | `global.anthropic.claude-haiku-4-5-20251001-v1:0` |
-| `models.text.smartest`         | Smartest text model             | `global.anthropic.claude-fable-5`                 |
+| `models.text.smartest`         | Smartest text model             | `global.anthropic.claude-opus-4-8`                |
 | `models.embeddings.default`    | Default embeddings model        | `amazon.titan-embed-text-v2:0`                    |
 | `models.embeddings.dimensions` | Default embedding dimensions    | `1024`                                            |
 | `models.image.default`         | Default image model             | `stability.stable-image-core-v1:1`                |

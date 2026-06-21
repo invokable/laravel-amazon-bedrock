@@ -407,7 +407,7 @@ describe('BedrockProvider model defaults', function () {
     test('returns smartest text model', function () {
         $provider = makeProvider();
 
-        expect($provider->smartestTextModel())->toContain('global.anthropic.claude-fable');
+        expect($provider->smartestTextModel())->toContain('global.anthropic.claude-opus');
     });
 
     test('uses custom models from config', function () {
