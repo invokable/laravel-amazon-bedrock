@@ -64,7 +64,7 @@ class BedrockProvider extends Provider implements AudioProvider, EmbeddingProvid
 
     public function defaultTextModel(): string
     {
-        return $this->config['models']['text']['default'] ?? 'global.anthropic.claude-sonnet-4-6';
+        return $this->config['models']['text']['default'] ?? 'global.anthropic.claude-sonnet-5';
     }
 
     public function cheapestTextModel(): string
