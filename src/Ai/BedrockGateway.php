@@ -16,7 +16,6 @@ use Laravel\Ai\Gateway\Concerns\HandlesFailoverErrors;
 use Laravel\Ai\Gateway\StepContext;
 use Laravel\Ai\Gateway\StepResponse;
 use Laravel\Ai\Gateway\TextGenerationOptions;
-use Laravel\Ai\Streaming\Events\StreamEvent;
 use Throwable;
 
 class BedrockGateway implements AudioGateway, EmbeddingGateway, ImageGateway, RerankingGateway, StepTextGateway
@@ -52,7 +51,7 @@ class BedrockGateway implements AudioGateway, EmbeddingGateway, ImageGateway, Re
         ?array $schema = null,
         ?TextGenerationOptions $options = null,
         ?int $timeout = null,
-        StepContext $stepContext = new StepContext(),
+        StepContext $stepContext = new StepContext,
     ): StepResponse {
         $client = $this->client($provider, $model, $timeout);
 
@@ -82,7 +81,7 @@ class BedrockGateway implements AudioGateway, EmbeddingGateway, ImageGateway, Re
         ?array $schema = null,
         ?TextGenerationOptions $options = null,
         ?int $timeout = null,
-        StepContext $stepContext = new StepContext(),
+        StepContext $stepContext = new StepContext,
     ): Generator {
         $client = $this->client($provider, $model, $timeout);
 

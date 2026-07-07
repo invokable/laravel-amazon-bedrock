@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Revolution\Amazon\Bedrock\Ai\Concerns;
 
 use Illuminate\Support\Collection;
+use Laravel\Ai\Gateway\StepResponse;
 use Laravel\Ai\Gateway\TextGenerationOptions;
 use Laravel\Ai\Messages\AssistantMessage;
 use Laravel\Ai\Messages\ToolResultMessage;
@@ -49,7 +50,7 @@ trait ParsesConverseResponses
     /**
      * Parse a single Converse step response into StepResponse (v0.9+ API).
      */
-    protected function parseConverseTextStep(array $result, Provider $provider, string $model, bool $structured): \Laravel\Ai\Gateway\StepResponse
+    protected function parseConverseTextStep(array $result, Provider $provider, string $model, bool $structured): StepResponse
     {
         $usage = new Usage(
             promptTokens: $result['usage']['inputTokens'] ?? 0,
@@ -68,6 +69,7 @@ trait ParsesConverseResponses
 
             if (isset($block['text'])) {
                 $output .= $block['text'];
+
                 continue;
             }
 
@@ -77,6 +79,7 @@ trait ParsesConverseResponses
 
             if ($structured && ($block['toolUse']['name'] ?? '') === 'output_structured_data') {
                 $structuredOutput = json_encode($block['toolUse']['input'] ?? []);
+
                 continue;
             }
 
@@ -93,7 +96,7 @@ trait ParsesConverseResponses
             $finishReason = FinishReason::Stop;
         }
 
-        return new \Laravel\Ai\Gateway\StepResponse(
+        return new StepResponse(
             text: $structuredOutput ?? $output,
             toolCalls: $toolCalls,
             finishReason: $finishReason,

@@ -16,6 +16,7 @@ use Laravel\Ai\Responses\Data\ToolCall;
 use Laravel\Ai\Responses\Data\ToolResult;
 use Laravel\Ai\Responses\Data\Usage;
 use Laravel\Ai\Streaming\Events\StreamEnd;
+use Laravel\Ai\Streaming\Events\StreamEvent;
 use Laravel\Ai\Streaming\Events\StreamStart;
 use Laravel\Ai\Streaming\Events\TextDelta;
 use Laravel\Ai\Streaming\Events\TextEnd;
@@ -395,7 +396,7 @@ trait HandlesConverseStreaming
     /**
      * Process a single Converse streaming step (v0.9+ API).
      *
-     * @return Generator<\Laravel\Ai\Streaming\Events\StreamEvent, mixed, mixed, \Laravel\Ai\Gateway\StepResponse>
+     * @return Generator<StreamEvent, mixed, mixed, StepResponse>
      */
     protected function processConverseStreamStep(
         string $invocationId,
@@ -467,7 +468,7 @@ trait HandlesConverseStreaming
 
                 if (isset($delta['text'])) {
                     $assistantText .= $delta['text'];
-                    $responseContent[$blockIndex]['text'] = ($responseContent[$blockIndex]['text'] ?? '') . $delta['text'];
+                    $responseContent[$blockIndex]['text'] = ($responseContent[$blockIndex]['text'] ?? '').$delta['text'];
 
                     yield (new TextDelta(
                         $this->generateEventId(),
@@ -545,22 +546,22 @@ trait HandlesConverseStreaming
         }
 
         $finishReason = match ($stopReason) {
-            'end_turn', 'stop_sequence' => \Laravel\Ai\Responses\Data\FinishReason::Stop,
-            'tool_use' => \Laravel\Ai\Responses\Data\FinishReason::ToolCalls,
-            'max_tokens' => \Laravel\Ai\Responses\Data\FinishReason::Length,
-            default => \Laravel\Ai\Responses\Data\FinishReason::Unknown,
+            'end_turn', 'stop_sequence' => FinishReason::Stop,
+            'tool_use' => FinishReason::ToolCalls,
+            'max_tokens' => FinishReason::Length,
+            default => FinishReason::Unknown,
         };
 
-        if (empty($toolCalls) && $structured && $finishReason === \Laravel\Ai\Responses\Data\FinishReason::ToolCalls) {
-            $finishReason = \Laravel\Ai\Responses\Data\FinishReason::Stop;
+        if (empty($toolCalls) && $structured && $finishReason === FinishReason::ToolCalls) {
+            $finishReason = FinishReason::Stop;
         }
 
-        $stepResponse = new \Laravel\Ai\Gateway\StepResponse(
+        $stepResponse = new StepResponse(
             text: $structuredOutput ?? $assistantText,
             toolCalls: $toolCalls,
             finishReason: $finishReason,
             usage: $totalUsage,
-            meta: new \Laravel\Ai\Responses\Data\Meta($provider->name(), $model),
+            meta: new Meta($provider->name(), $model),
             structured: $structuredOutput !== null ? $this->decodeStructuredOutput($structuredOutput) : null,
             providerContentBlocks: $responseContent,
         );
