@@ -48,7 +48,7 @@ trait ParsesConverseResponses
     }
 
     /**
-     * Parse a single Converse step response into StepResponse (v0.9+ API).
+     * Parse a single Converse response into a step response.
      */
     protected function parseConverseTextStep(array $result, Provider $provider, string $model, bool $structured): StepResponse
     {
@@ -87,6 +87,7 @@ trait ParsesConverseResponses
                 $block['toolUse']['toolUseId'] ?? '',
                 $block['toolUse']['name'] ?? '',
                 $block['toolUse']['input'] ?? [],
+                $block['toolUse']['toolUseId'] ?? null,
             );
         }
 

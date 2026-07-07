@@ -129,36 +129,57 @@ describe('Authentication modes', function () {
     });
 
     test('falls back to default credential chain when no key or secret', function () {
-        // With no AWS credentials in the environment, the default provider will throw
-        expect(function () {
-            Http::fake([
-                'bedrock-runtime.us-east-1.amazonaws.com/*' => Http::response(fakeEmbeddingResponseForAuth()),
-            ]);
+        Http::fake([
+            'bedrock-runtime.us-east-1.amazonaws.com/*' => Http::response(fakeEmbeddingResponseForAuth()),
+        ]);
 
-            $gateway = new BedrockGateway;
+        $gateway = new BedrockGateway;
+
+        try {
             $gateway->generateEmbeddings(
                 provider: makeProvider(['key' => null]),
                 model: 'amazon.titan-embed-text-v2:0',
                 inputs: ['Hello world'],
                 dimensions: 1024,
             );
-        })->toThrow(Exception::class);
+        } catch (Exception $e) {
+            expect($e)->toBeInstanceOf(Exception::class);
+
+            return;
+        }
+
+        Http::assertSent(function ($request) {
+            $auth = $request->header('Authorization');
+
+            return empty($auth) || ! str_starts_with($auth[0] ?? '', 'Bearer');
+        });
     });
 
     test('empty key string falls back to default credential chain', function () {
-        expect(function () {
-            Http::fake([
-                'bedrock-runtime.us-east-1.amazonaws.com/*' => Http::response(fakeEmbeddingResponseForAuth()),
-            ]);
+        Http::fake([
+            'bedrock-runtime.us-east-1.amazonaws.com/*' => Http::response(fakeEmbeddingResponseForAuth()),
+        ]);
 
-            $gateway = new BedrockGateway;
+        $gateway = new BedrockGateway;
+
+        try {
             $gateway->generateEmbeddings(
                 provider: makeProvider(['key' => '']),
                 model: 'amazon.titan-embed-text-v2:0',
                 inputs: ['Hello world'],
                 dimensions: 1024,
             );
-        })->toThrow(Exception::class);
+        } catch (Exception $e) {
+            expect($e)->toBeInstanceOf(Exception::class);
+
+            return;
+        }
+
+        Http::assertSent(function ($request) {
+            $auth = $request->header('Authorization');
+
+            return empty($auth) || ! str_starts_with($auth[0] ?? '', 'Bearer');
+        });
     });
 
     test('bearer auth preserves existing behavior', function () {

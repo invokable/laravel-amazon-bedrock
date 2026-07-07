@@ -13,9 +13,11 @@ use Laravel\Ai\Contracts\Gateway\StepTextGateway;
 use Laravel\Ai\Contracts\Providers\TextProvider;
 use Laravel\Ai\Gateway\Concerns\DecodesStructuredOutput;
 use Laravel\Ai\Gateway\Concerns\HandlesFailoverErrors;
+use Laravel\Ai\Gateway\Concerns\InvokesTools;
 use Laravel\Ai\Gateway\StepContext;
 use Laravel\Ai\Gateway\StepResponse;
 use Laravel\Ai\Gateway\TextGenerationOptions;
+use Laravel\Ai\Responses\TextResponse;
 use Throwable;
 
 class BedrockGateway implements AudioGateway, EmbeddingGateway, ImageGateway, RerankingGateway, StepTextGateway
@@ -31,6 +33,12 @@ class BedrockGateway implements AudioGateway, EmbeddingGateway, ImageGateway, Re
     use Concerns\Reranks;
     use DecodesStructuredOutput;
     use HandlesFailoverErrors;
+    use InvokesTools;
+
+    public function __construct()
+    {
+        $this->initializeToolCallbacks();
+    }
 
     /**
      * Bedrock may return 529 (Anthropic overloaded) in addition to 503.
@@ -42,7 +50,7 @@ class BedrockGateway implements AudioGateway, EmbeddingGateway, ImageGateway, Re
         return [503, 529];
     }
 
-    public function generateTextStep(
+    public function generateText(
         TextProvider $provider,
         string $model,
         ?string $instructions,
@@ -51,7 +59,45 @@ class BedrockGateway implements AudioGateway, EmbeddingGateway, ImageGateway, Re
         ?array $schema = null,
         ?TextGenerationOptions $options = null,
         ?int $timeout = null,
-        StepContext $stepContext = new StepContext,
+    ): TextResponse {
+        $client = $this->client($provider, $model, $timeout);
+
+        $body = $this->buildConverseRequestBody($provider, $model, $instructions, $messages, $tools, $schema, $options);
+
+        try {
+            $response = $this->withErrorHandling(
+                $provider->name(),
+                fn () => $client->post($this->converseUrl($model), $body),
+            );
+
+            $result = $response->json();
+        } catch (Throwable $e) {
+            throw $this->mapBedrockException($e, $provider->name(), $model);
+        }
+
+        return $this->parseConverseResponse(
+            $result,
+            $provider,
+            $model,
+            filled($schema),
+            $tools,
+            $schema,
+            $options,
+            $body,
+            $timeout,
+        );
+    }
+
+    public function generateTextStep(
+        TextProvider $provider,
+        string $model,
+        ?string $instructions,
+        array $messages,
+        array $tools,
+        ?array $schema,
+        ?TextGenerationOptions $options,
+        ?int $timeout,
+        StepContext $stepContext,
     ): StepResponse {
         $client = $this->client($provider, $model, $timeout);
 
@@ -71,7 +117,7 @@ class BedrockGateway implements AudioGateway, EmbeddingGateway, ImageGateway, Re
         return $this->parseConverseTextStep($result, $provider, $model, filled($schema));
     }
 
-    public function generateStreamStep(
+    public function streamText(
         string $invocationId,
         TextProvider $provider,
         string $model,
@@ -81,7 +127,6 @@ class BedrockGateway implements AudioGateway, EmbeddingGateway, ImageGateway, Re
         ?array $schema = null,
         ?TextGenerationOptions $options = null,
         ?int $timeout = null,
-        StepContext $stepContext = new StepContext,
     ): Generator {
         $client = $this->client($provider, $model, $timeout);
 
@@ -97,7 +142,47 @@ class BedrockGateway implements AudioGateway, EmbeddingGateway, ImageGateway, Re
             throw $this->mapBedrockException($e, $provider->name(), $model);
         }
 
-        yield from $this->processConverseStreamStep(
+        yield from $this->processConverseStream(
+            $invocationId,
+            $provider,
+            $model,
+            $tools,
+            $options,
+            $response->getBody(),
+            $body,
+            0,
+            $options?->maxSteps,
+            $timeout,
+        );
+    }
+
+    public function generateStreamStep(
+        string $invocationId,
+        TextProvider $provider,
+        string $model,
+        ?string $instructions,
+        array $messages,
+        array $tools,
+        ?array $schema,
+        ?TextGenerationOptions $options,
+        ?int $timeout,
+        StepContext $stepContext,
+    ): Generator {
+        $client = $this->client($provider, $model, $timeout);
+
+        $body = $this->buildConverseRequestBody($provider, $model, $instructions, $messages, $tools, $schema, $options);
+
+        try {
+            $response = $this->withErrorHandling(
+                $provider->name(),
+                fn () => $client->withOptions(['stream' => true])
+                    ->post($this->converseStreamUrl($model), $body),
+            );
+        } catch (Throwable $e) {
+            throw $this->mapBedrockException($e, $provider->name(), $model);
+        }
+
+        return yield from $this->processConverseStreamStep(
             $invocationId,
             $provider,
             $model,

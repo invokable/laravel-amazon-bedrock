@@ -394,9 +394,9 @@ trait HandlesConverseStreaming
     }
 
     /**
-     * Process a single Converse streaming step (v0.9+ API).
+     * Process a single Converse streaming step.
      *
-     * @return Generator<StreamEvent, mixed, mixed, StepResponse>
+     * @return Generator<int, StreamEvent, mixed, StepResponse>
      */
     protected function processConverseStreamStep(
         string $invocationId,
@@ -429,12 +429,12 @@ trait HandlesConverseStreaming
             if ($eventType === 'contentBlockStart') {
                 $start = $eventData['start'] ?? [];
                 $blockIndex = $eventData['contentBlockIndex'] ?? count($responseContent);
+                $currentBlockIndex = $blockIndex;
 
                 if (isset($start['toolUse'])) {
                     $currentBlockType = 'tool_use';
-                    $currentBlockIndex = $blockIndex;
 
-                    $pendingToolCalls[] = [
+                    $pendingToolCalls[$blockIndex] = [
                         'id' => $start['toolUse']['toolUseId'] ?? '',
                         'name' => $start['toolUse']['name'] ?? '',
                         'arguments' => '',
@@ -449,7 +449,6 @@ trait HandlesConverseStreaming
                     ];
                 } else {
                     $currentBlockType = 'text';
-                    $currentBlockIndex = $blockIndex;
                     $responseContent[$blockIndex] = ['text' => ''];
 
                     yield (new TextStart(
@@ -480,68 +479,61 @@ trait HandlesConverseStreaming
                     continue;
                 }
 
-                if (isset($delta['toolUse'])) {
-                    $toolData = $delta['toolUse'];
-
-                    if (isset($toolData['input'])) {
-                        $toolIndex = count($pendingToolCalls) - 1;
-                        $pendingToolCalls[$toolIndex]['arguments'] .= $toolData['input'];
-                        $responseContent[$blockIndex]['toolUse']['input'] = (object) json_decode($pendingToolCalls[$toolIndex]['arguments'], true);
-                    }
-
-                    continue;
+                if (isset($delta['toolUse']['input']) && isset($pendingToolCalls[$blockIndex])) {
+                    $pendingToolCalls[$blockIndex]['arguments'] .= $delta['toolUse']['input'];
                 }
 
                 continue;
             }
 
             if ($eventType === 'contentBlockStop') {
+                $blockIndex = $eventData['contentBlockIndex'] ?? $currentBlockIndex;
+
                 if ($currentBlockType === 'text') {
                     yield (new TextEnd(
                         $this->generateEventId(),
                         $messageId,
                         time(),
                     ))->withInvocationId($invocationId);
+                } elseif ($currentBlockType === 'tool_use' && isset($pendingToolCalls[$blockIndex])) {
+                    $call = $pendingToolCalls[$blockIndex];
+                    $arguments = json_decode($call['arguments'] ?: '{}', true) ?? [];
+
+                    if ($structured && ($call['name'] ?? '') === 'output_structured_data') {
+                        $structuredOutput = json_encode($arguments);
+                    } else {
+                        $toolCall = new ToolCall($call['id'], $call['name'], $arguments, $call['id']);
+                        $toolCalls[] = $toolCall;
+
+                        $responseContent[$blockIndex]['toolUse']['input'] = $arguments;
+
+                        yield (new ToolCallEvent(
+                            $this->generateEventId(),
+                            $toolCall,
+                            time(),
+                        ))->withInvocationId($invocationId);
+                    }
                 }
+
+                $currentBlockType = '';
 
                 continue;
             }
 
             if ($eventType === 'messageStop') {
-                continue;
-            }
-
-            if ($eventType === 'messageStart') {
-                continue;
-            }
-
-            if ($eventType === 'metadata') {
-                $metadata = $eventData['usage'] ?? [];
-                $totalUsage = new Usage(
-                    promptTokens: $metadata['inputTokens'] ?? 0,
-                    completionTokens: $metadata['outputTokens'] ?? 0,
-                    cacheWriteInputTokens: $metadata['cacheWriteInputTokens'] ?? 0,
-                    cacheReadInputTokens: $metadata['cacheReadInputTokens'] ?? 0,
-                );
-
                 $stopReason = $eventData['stopReason'] ?? 'stop';
 
                 continue;
             }
-        }
 
-        // Parse tool calls from responseContent
-        foreach ($responseContent as $block) {
-            if (isset($block['toolUse'])) {
-                $toolCalls[] = new ToolCall(
-                    $block['toolUse']['toolUseId'] ?? '',
-                    $block['toolUse']['name'] ?? '',
-                    $block['toolUse']['input'] ?? [],
+            if ($eventType === 'metadata') {
+                $usage = $eventData['usage'] ?? [];
+                $totalUsage = new Usage(
+                    promptTokens: $usage['inputTokens'] ?? 0,
+                    completionTokens: $usage['outputTokens'] ?? 0,
+                    cacheWriteInputTokens: $usage['cacheWriteInputTokens'] ?? 0,
+                    cacheReadInputTokens: $usage['cacheReadInputTokens'] ?? 0,
                 );
-            }
-
-            if ($structured && isset($block['toolUse']) && ($block['toolUse']['name'] ?? '') === 'output_structured_data') {
-                $structuredOutput = json_encode($block['toolUse']['input'] ?? []);
             }
         }
 
@@ -556,21 +548,14 @@ trait HandlesConverseStreaming
             $finishReason = FinishReason::Stop;
         }
 
-        $stepResponse = new StepResponse(
+        return new StepResponse(
             text: $structuredOutput ?? $assistantText,
             toolCalls: $toolCalls,
             finishReason: $finishReason,
             usage: $totalUsage,
             meta: new Meta($provider->name(), $model),
             structured: $structuredOutput !== null ? $this->decodeStructuredOutput($structuredOutput) : null,
-            providerContentBlocks: $responseContent,
+            providerContentBlocks: array_values($responseContent),
         );
-
-        yield (new StreamEnd(
-            $this->generateEventId(),
-            time(),
-        ))->withInvocationId($invocationId);
-
-        return $stepResponse;
     }
 }
