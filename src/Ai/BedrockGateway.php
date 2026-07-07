@@ -54,17 +54,17 @@ class BedrockGateway implements AudioGateway, EmbeddingGateway, ImageGateway, Re
         ?int $timeout = null,
         StepContext $stepContext = new StepContext(),
     ): StepResponse {
-        $client = $this->createBedrockClient($provider, $timeout);
+        $client = $this->client($provider, $model, $timeout);
 
         $body = $this->buildConverseRequestBody($provider, $model, $instructions, $messages, $tools, $schema, $options);
 
         try {
             $response = $this->withErrorHandling(
                 $provider->name(),
-                fn () => $client->converse($body),
+                fn () => $client->post($this->converseUrl($model), $body),
             );
 
-            $result = $response->toArray();
+            $result = $response->json();
         } catch (Throwable $e) {
             throw $this->mapBedrockException($e, $provider->name(), $model);
         }
@@ -84,14 +84,15 @@ class BedrockGateway implements AudioGateway, EmbeddingGateway, ImageGateway, Re
         ?int $timeout = null,
         StepContext $stepContext = new StepContext(),
     ): Generator {
-        $client = $this->createBedrockClient($provider, $timeout);
+        $client = $this->client($provider, $model, $timeout);
 
         $body = $this->buildConverseRequestBody($provider, $model, $instructions, $messages, $tools, $schema, $options);
 
         try {
             $response = $this->withErrorHandling(
                 $provider->name(),
-                fn () => $client->converseStream($body),
+                fn () => $client->withOptions(['stream' => true])
+                    ->post($this->converseStreamUrl($model), $body),
             );
         } catch (Throwable $e) {
             throw $this->mapBedrockException($e, $provider->name(), $model);
@@ -101,7 +102,7 @@ class BedrockGateway implements AudioGateway, EmbeddingGateway, ImageGateway, Re
             $invocationId,
             $provider,
             $model,
-            $response['stream'] ?? null,
+            $response->getBody(),
             filled($schema),
         );
     }
