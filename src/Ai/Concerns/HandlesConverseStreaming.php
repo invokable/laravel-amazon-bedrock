@@ -7,8 +7,11 @@ namespace Revolution\Amazon\Bedrock\Ai\Concerns;
 use Aws\Api\Parser\NonSeekableStreamDecodingEventStreamIterator;
 use Generator;
 use Illuminate\Support\Str;
+use Laravel\Ai\Gateway\StepResponse;
 use Laravel\Ai\Gateway\TextGenerationOptions;
 use Laravel\Ai\Providers\Provider;
+use Laravel\Ai\Responses\Data\FinishReason;
+use Laravel\Ai\Responses\Data\Meta;
 use Laravel\Ai\Responses\Data\ToolCall;
 use Laravel\Ai\Responses\Data\ToolResult;
 use Laravel\Ai\Responses\Data\Usage;
@@ -387,5 +390,186 @@ trait HandlesConverseStreaming
     protected function generateEventId(): string
     {
         return strtolower((string) Str::uuid7());
+    }
+
+    /**
+     * Process a single Converse streaming step (v0.9+ API).
+     *
+     * @return Generator<\Laravel\Ai\Streaming\Events\StreamEvent, mixed, mixed, \Laravel\Ai\Gateway\StepResponse>
+     */
+    protected function processConverseStreamStep(
+        string $invocationId,
+        Provider $provider,
+        string $model,
+        $stream,
+        bool $structured,
+    ): Generator {
+        $messageId = $this->generateEventId();
+        $timestamp = time();
+        $totalUsage = new Usage;
+
+        yield (new StreamStart(
+            $this->generateEventId(),
+            $provider->name(),
+            $model,
+            $timestamp,
+        ))->withInvocationId($invocationId);
+
+        $assistantText = '';
+        $pendingToolCalls = [];
+        $toolCalls = [];
+        $structuredOutput = null;
+        $currentBlockIndex = null;
+        $currentBlockType = '';
+        $responseContent = [];
+        $stopReason = 'stop';
+
+        foreach ($this->decodeConverseEventStream($stream) as [$eventType, $eventData]) {
+            if ($eventType === 'contentBlockStart') {
+                $start = $eventData['start'] ?? [];
+                $blockIndex = $eventData['contentBlockIndex'] ?? count($responseContent);
+
+                if (isset($start['toolUse'])) {
+                    $currentBlockType = 'tool_use';
+                    $currentBlockIndex = $blockIndex;
+
+                    $pendingToolCalls[] = [
+                        'id' => $start['toolUse']['toolUseId'] ?? '',
+                        'name' => $start['toolUse']['name'] ?? '',
+                        'arguments' => '',
+                    ];
+
+                    $responseContent[$blockIndex] = [
+                        'toolUse' => [
+                            'toolUseId' => $start['toolUse']['toolUseId'] ?? '',
+                            'name' => $start['toolUse']['name'] ?? '',
+                            'input' => [],
+                        ],
+                    ];
+                } else {
+                    $currentBlockType = 'text';
+                    $currentBlockIndex = $blockIndex;
+                    $responseContent[$blockIndex] = ['text' => ''];
+
+                    yield (new TextStart(
+                        $this->generateEventId(),
+                        $messageId,
+                        time(),
+                    ))->withInvocationId($invocationId);
+                }
+
+                continue;
+            }
+
+            if ($eventType === 'contentBlockDelta') {
+                $delta = $eventData['delta'] ?? [];
+                $blockIndex = $eventData['contentBlockIndex'] ?? $currentBlockIndex;
+
+                if (isset($delta['text'])) {
+                    $assistantText .= $delta['text'];
+                    $responseContent[$blockIndex]['text'] = ($responseContent[$blockIndex]['text'] ?? '') . $delta['text'];
+
+                    yield (new TextDelta(
+                        $this->generateEventId(),
+                        $messageId,
+                        $delta['text'],
+                        time(),
+                    ))->withInvocationId($invocationId);
+
+                    continue;
+                }
+
+                if (isset($delta['toolUse'])) {
+                    $toolData = $delta['toolUse'];
+
+                    if (isset($toolData['input'])) {
+                        $toolIndex = count($pendingToolCalls) - 1;
+                        $pendingToolCalls[$toolIndex]['arguments'] .= $toolData['input'];
+                        $responseContent[$blockIndex]['toolUse']['input'] = (object) json_decode($pendingToolCalls[$toolIndex]['arguments'], true);
+                    }
+
+                    continue;
+                }
+
+                continue;
+            }
+
+            if ($eventType === 'contentBlockStop') {
+                if ($currentBlockType === 'text') {
+                    yield (new TextEnd(
+                        $this->generateEventId(),
+                        $messageId,
+                        time(),
+                    ))->withInvocationId($invocationId);
+                }
+
+                continue;
+            }
+
+            if ($eventType === 'messageStop') {
+                continue;
+            }
+
+            if ($eventType === 'messageStart') {
+                continue;
+            }
+
+            if ($eventType === 'metadata') {
+                $metadata = $eventData['usage'] ?? [];
+                $totalUsage = new Usage(
+                    promptTokens: $metadata['inputTokens'] ?? 0,
+                    completionTokens: $metadata['outputTokens'] ?? 0,
+                    cacheWriteInputTokens: $metadata['cacheWriteInputTokens'] ?? 0,
+                    cacheReadInputTokens: $metadata['cacheReadInputTokens'] ?? 0,
+                );
+
+                $stopReason = $eventData['stopReason'] ?? 'stop';
+
+                continue;
+            }
+        }
+
+        // Parse tool calls from responseContent
+        foreach ($responseContent as $block) {
+            if (isset($block['toolUse'])) {
+                $toolCalls[] = new ToolCall(
+                    $block['toolUse']['toolUseId'] ?? '',
+                    $block['toolUse']['name'] ?? '',
+                    $block['toolUse']['input'] ?? [],
+                );
+            }
+
+            if ($structured && isset($block['toolUse']) && ($block['toolUse']['name'] ?? '') === 'output_structured_data') {
+                $structuredOutput = json_encode($block['toolUse']['input'] ?? []);
+            }
+        }
+
+        $finishReason = match ($stopReason) {
+            'end_turn', 'stop_sequence' => \Laravel\Ai\Responses\Data\FinishReason::Stop,
+            'tool_use' => \Laravel\Ai\Responses\Data\FinishReason::ToolCalls,
+            'max_tokens' => \Laravel\Ai\Responses\Data\FinishReason::Length,
+            default => \Laravel\Ai\Responses\Data\FinishReason::Unknown,
+        };
+
+        if (empty($toolCalls) && $structured && $finishReason === \Laravel\Ai\Responses\Data\FinishReason::ToolCalls) {
+            $finishReason = \Laravel\Ai\Responses\Data\FinishReason::Stop;
+        }
+
+        $stepResponse = new \Laravel\Ai\Gateway\StepResponse(
+            text: $structuredOutput ?? $assistantText,
+            toolCalls: $toolCalls,
+            finishReason: $finishReason,
+            usage: $totalUsage,
+            meta: new \Laravel\Ai\Responses\Data\Meta($provider->name(), $model),
+            structured: $structuredOutput !== null ? $this->decodeStructuredOutput($structuredOutput) : null,
+            providerContentBlocks: $responseContent,
+        );
+
+        yield (new StreamEnd(
+            $this->generateEventId(),
+            time(),
+        ))->withInvocationId($invocationId);
+
+        return $stepResponse;
     }
 }

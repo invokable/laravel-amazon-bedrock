@@ -9,14 +9,17 @@ use Laravel\Ai\Contracts\Gateway\AudioGateway;
 use Laravel\Ai\Contracts\Gateway\EmbeddingGateway;
 use Laravel\Ai\Contracts\Gateway\ImageGateway;
 use Laravel\Ai\Contracts\Gateway\RerankingGateway;
-use Laravel\Ai\Contracts\Gateway\TextGateway;
+use Laravel\Ai\Contracts\Gateway\StepTextGateway;
 use Laravel\Ai\Contracts\Providers\TextProvider;
+use Laravel\Ai\Gateway\Concerns\DecodesStructuredOutput;
 use Laravel\Ai\Gateway\Concerns\HandlesFailoverErrors;
-use Laravel\Ai\Gateway\Concerns\InvokesTools;
+use Laravel\Ai\Gateway\StepContext;
+use Laravel\Ai\Gateway\StepResponse;
 use Laravel\Ai\Gateway\TextGenerationOptions;
-use Laravel\Ai\Responses\TextResponse;
+use Laravel\Ai\Streaming\Events\StreamEvent;
+use Throwable;
 
-class BedrockGateway implements AudioGateway, EmbeddingGateway, ImageGateway, RerankingGateway, TextGateway
+class BedrockGateway implements AudioGateway, EmbeddingGateway, ImageGateway, RerankingGateway, StepTextGateway
 {
     use Concerns\BuildsConverseRequests;
     use Concerns\CreatesBedrockClient;
@@ -27,13 +30,8 @@ class BedrockGateway implements AudioGateway, EmbeddingGateway, ImageGateway, Re
     use Concerns\MapsConverseAttachments;
     use Concerns\ParsesConverseResponses;
     use Concerns\Reranks;
+    use DecodesStructuredOutput;
     use HandlesFailoverErrors;
-    use InvokesTools;
-
-    public function __construct()
-    {
-        $this->initializeToolCallbacks();
-    }
 
     /**
      * Bedrock may return 529 (Anthropic overloaded) in addition to 503.
@@ -45,7 +43,7 @@ class BedrockGateway implements AudioGateway, EmbeddingGateway, ImageGateway, Re
         return [503, 529];
     }
 
-    public function generateText(
+    public function generateTextStep(
         TextProvider $provider,
         string $model,
         ?string $instructions,
@@ -54,11 +52,27 @@ class BedrockGateway implements AudioGateway, EmbeddingGateway, ImageGateway, Re
         ?array $schema = null,
         ?TextGenerationOptions $options = null,
         ?int $timeout = null,
-    ): TextResponse {
-        return $this->generateConverseText($provider, $model, $instructions, $messages, $tools, $schema, $options, $timeout);
+        StepContext $stepContext = new StepContext(),
+    ): StepResponse {
+        $client = $this->client($provider, $model, $timeout);
+
+        $body = $this->buildConverseRequestBody($provider, $model, $instructions, $messages, $tools, $schema, $options);
+
+        try {
+            $response = $this->withErrorHandling(
+                $provider->name(),
+                fn () => $client->post($this->converseUrl($model), $body),
+            );
+
+            $result = $response->json();
+        } catch (Throwable $e) {
+            throw $this->mapBedrockException($e, $provider->name(), $model);
+        }
+
+        return $this->parseConverseTextStep($result, $provider, $model, filled($schema));
     }
 
-    public function streamText(
+    public function generateStreamStep(
         string $invocationId,
         TextProvider $provider,
         string $model,
@@ -68,68 +82,37 @@ class BedrockGateway implements AudioGateway, EmbeddingGateway, ImageGateway, Re
         ?array $schema = null,
         ?TextGenerationOptions $options = null,
         ?int $timeout = null,
+        StepContext $stepContext = new StepContext(),
     ): Generator {
-        yield from $this->streamConverseText($invocationId, $provider, $model, $instructions, $messages, $tools, $schema, $options, $timeout);
-    }
+        $client = $this->client($provider, $model, $timeout);
 
-    /**
-     * Generate text using the Converse API.
-     */
-    protected function generateConverseText(
-        TextProvider $provider,
-        string $model,
-        ?string $instructions,
-        array $messages,
-        array $tools,
-        ?array $schema,
-        ?TextGenerationOptions $options,
-        ?int $timeout,
-    ): TextResponse {
         $body = $this->buildConverseRequestBody($provider, $model, $instructions, $messages, $tools, $schema, $options);
 
-        $response = $this->withErrorHandling(
-            $provider->name(),
-            fn () => $this->client($provider, $model, $timeout)
-                ->post($this->converseUrl($model), $body),
-        );
+        try {
+            $response = $this->withErrorHandling(
+                $provider->name(),
+                fn () => $client->withOptions(['stream' => true])
+                    ->post($this->converseStreamUrl($model), $body),
+            );
+        } catch (Throwable $e) {
+            throw $this->mapBedrockException($e, $provider->name(), $model);
+        }
 
-        return $this->parseConverseResponse($response->json(), $provider, $model, filled($schema), $tools, $schema, $options, $body, $timeout);
-    }
-
-    /**
-     * Stream text using the Converse API.
-     */
-    protected function streamConverseText(
-        string $invocationId,
-        TextProvider $provider,
-        string $model,
-        ?string $instructions,
-        array $messages,
-        array $tools,
-        ?array $schema,
-        ?TextGenerationOptions $options,
-        ?int $timeout,
-    ): Generator {
-        $body = $this->buildConverseRequestBody($provider, $model, $instructions, $messages, $tools, $schema, $options);
-
-        $response = $this->withErrorHandling(
-            $provider->name(),
-            fn () => $this->client($provider, $model, $timeout)
-                ->withOptions(['stream' => true])
-                ->post($this->converseStreamUrl($model), $body),
-        );
-
-        yield from $this->processConverseStream(
+        yield from $this->processConverseStreamStep(
             $invocationId,
             $provider,
             $model,
-            $tools,
-            $options,
             $response->getBody(),
-            $body,
-            0,
-            null,
-            $timeout,
+            filled($schema),
         );
+    }
+
+    /**
+     * Map Bedrock exceptions to AI SDK exceptions.
+     */
+    protected function mapBedrockException(Throwable $e, string $provider, string $model): Throwable
+    {
+        // Exception mapping logic if needed
+        return $e;
     }
 }
