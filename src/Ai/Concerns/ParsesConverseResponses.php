@@ -46,6 +46,64 @@ trait ParsesConverseResponses
         );
     }
 
+    /**
+     * Parse a single Converse step response into StepResponse (v0.9+ API).
+     */
+    protected function parseConverseTextStep(array $result, Provider $provider, string $model, bool $structured): \Laravel\Ai\Gateway\StepResponse
+    {
+        $usage = new Usage(
+            promptTokens: $result['usage']['inputTokens'] ?? 0,
+            completionTokens: $result['usage']['outputTokens'] ?? 0,
+            cacheWriteInputTokens: $result['usage']['cacheWriteInputTokens'] ?? 0,
+            cacheReadInputTokens: $result['usage']['cacheReadInputTokens'] ?? 0,
+        );
+
+        $output = '';
+        $toolCalls = [];
+        $providerContentBlocks = [];
+        $structuredOutput = null;
+
+        foreach ($result['output']['message']['content'] ?? [] as $block) {
+            $providerContentBlocks[] = $block;
+
+            if (isset($block['text'])) {
+                $output .= $block['text'];
+                continue;
+            }
+
+            if (! isset($block['toolUse'])) {
+                continue;
+            }
+
+            if ($structured && ($block['toolUse']['name'] ?? '') === 'output_structured_data') {
+                $structuredOutput = json_encode($block['toolUse']['input'] ?? []);
+                continue;
+            }
+
+            $toolCalls[] = new ToolCall(
+                $block['toolUse']['toolUseId'] ?? '',
+                $block['toolUse']['name'] ?? '',
+                $block['toolUse']['input'] ?? [],
+            );
+        }
+
+        $finishReason = $this->extractConverseFinishReason($result);
+
+        if (empty($toolCalls) && $structured && $finishReason === FinishReason::ToolCalls) {
+            $finishReason = FinishReason::Stop;
+        }
+
+        return new \Laravel\Ai\Gateway\StepResponse(
+            text: $structuredOutput ?? $output,
+            toolCalls: $toolCalls,
+            finishReason: $finishReason,
+            usage: $usage,
+            meta: new Meta($provider->name(), $model),
+            structured: $structuredOutput !== null ? $this->decodeStructuredOutput($structuredOutput) : null,
+            providerContentBlocks: $providerContentBlocks,
+        );
+    }
+
     protected function processConverseResponse(
         array $data,
         Provider $provider,
