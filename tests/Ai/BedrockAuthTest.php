@@ -42,7 +42,7 @@ describe('Authentication modes', function () {
         $gateway = new BedrockGateway;
         $gateway->generateEmbeddings(
             provider: makeProvider([
-                'key' => 'AKIAIOSFODNN7EXAMPLE',
+                'key' => 'EXAMPLE',
                 'secret' => 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY',
             ]),
             model: 'amazon.titan-embed-text-v2:0',
@@ -66,7 +66,7 @@ describe('Authentication modes', function () {
         $gateway = new BedrockGateway;
         $gateway->generateEmbeddings(
             provider: makeProvider([
-                'key' => 'AKIAIOSFODNN7EXAMPLE',
+                'key' => 'EXAMPLE',
                 'secret' => 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY',
             ]),
             model: 'amazon.titan-embed-text-v2:0',
@@ -90,7 +90,7 @@ describe('Authentication modes', function () {
         $gateway = new BedrockGateway;
         $gateway->generateEmbeddings(
             provider: makeProvider([
-                'key' => 'AKIAIOSFODNN7EXAMPLE',
+                'key' => 'EXAMPLE',
                 'secret' => 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY',
                 'region' => 'ap-northeast-1',
             ]),
@@ -112,7 +112,7 @@ describe('Authentication modes', function () {
         $gateway = new BedrockGateway;
         $gateway->generateEmbeddings(
             provider: makeProvider([
-                'key' => 'ASIAIOSFODNN7EXAMPLE',
+                'key' => 'EXAMPLE',
                 'secret' => 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY',
                 'token' => 'FwoGZXIvYXdzEBYaDHqa0AP',
             ]),
