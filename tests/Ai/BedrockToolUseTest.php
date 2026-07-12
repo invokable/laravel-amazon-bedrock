@@ -6,6 +6,7 @@ use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\Support\Facades\Http;
 use Laravel\Ai\Contracts\Tool;
+use Laravel\Ai\Gateway\TextGenerationLoop;
 use Laravel\Ai\Gateway\TextGenerationOptions;
 use Laravel\Ai\Messages\AssistantMessage;
 use Laravel\Ai\Messages\Message;
@@ -129,7 +130,7 @@ describe('BedrockGateway tool use - generateText', function () {
         $gateway = new BedrockGateway;
         $tool = createGetWeatherTool();
 
-        $gateway->generateText(
+        (new TextGenerationLoop($gateway))->generate(
             provider: makeToolTestProvider(),
             model: 'anthropic.claude-3-haiku-20240307-v1:0',
             instructions: null,
@@ -161,7 +162,7 @@ describe('BedrockGateway tool use - generateText', function () {
         $gateway = new BedrockGateway;
         $tool = createGetWeatherTool();
 
-        $response = $gateway->generateText(
+        $response = (new TextGenerationLoop($gateway))->generate(
             provider: makeToolTestProvider(),
             model: 'anthropic.claude-3-haiku-20240307-v1:0',
             instructions: 'You are a weather assistant.',
@@ -189,7 +190,7 @@ describe('BedrockGateway tool use - generateText', function () {
         $gateway = new BedrockGateway;
         $tool = createGetWeatherTool();
 
-        $gateway->generateText(
+        (new TextGenerationLoop($gateway))->generate(
             provider: makeToolTestProvider(),
             model: 'anthropic.claude-3-haiku-20240307-v1:0',
             instructions: null,
@@ -221,7 +222,7 @@ describe('BedrockGateway tool use - generateText', function () {
         $gateway = new BedrockGateway;
         $tool = createGetWeatherTool();
 
-        $response = $gateway->generateText(
+        $response = (new TextGenerationLoop($gateway))->generate(
             provider: makeToolTestProvider(),
             model: 'anthropic.claude-3-haiku-20240307-v1:0',
             instructions: null,
@@ -254,7 +255,7 @@ describe('BedrockGateway tool use - generateText', function () {
         $gateway = new BedrockGateway;
         $tool = createGetWeatherTool();
 
-        $response = $gateway->generateText(
+        $response = (new TextGenerationLoop($gateway))->generate(
             provider: makeToolTestProvider(),
             model: 'anthropic.claude-3-haiku-20240307-v1:0',
             instructions: null,
@@ -279,7 +280,8 @@ describe('BedrockGateway tool use - generateText', function () {
         $invokedCalled = false;
 
         $gateway = new BedrockGateway;
-        $gateway->onToolInvocation(
+        $loop = new TextGenerationLoop($gateway);
+        $loop->onToolInvocation(
             invoking: function ($tool, $arguments) use (&$invokingCalled) {
                 $invokingCalled = true;
                 expect($arguments)->toBe(['city' => 'Tokyo']);
@@ -292,7 +294,7 @@ describe('BedrockGateway tool use - generateText', function () {
 
         $tool = createGetWeatherTool();
 
-        $gateway->generateText(
+        $loop->generate(
             provider: makeToolTestProvider(),
             model: 'anthropic.claude-3-haiku-20240307-v1:0',
             instructions: null,
@@ -315,7 +317,7 @@ describe('BedrockGateway tool use - generateText', function () {
 
         $options = new TextGenerationOptions(maxSteps: 1);
 
-        $response = $gateway->generateText(
+        $response = (new TextGenerationLoop($gateway))->generate(
             provider: makeToolTestProvider(),
             model: 'anthropic.claude-3-haiku-20240307-v1:0',
             instructions: null,
@@ -337,7 +339,7 @@ describe('BedrockGateway tool use - generateText', function () {
         $gateway = new BedrockGateway;
         $tool = createGetWeatherTool();
 
-        $response = $gateway->generateText(
+        $response = (new TextGenerationLoop($gateway))->generate(
             provider: makeToolTestProvider(),
             model: 'anthropic.claude-3-haiku-20240307-v1:0',
             instructions: null,
@@ -357,7 +359,7 @@ describe('BedrockGateway tool use - generateText', function () {
         ]);
 
         $gateway = new BedrockGateway;
-        $gateway->generateText(
+        (new TextGenerationLoop($gateway))->generate(
             provider: makeToolTestProvider(),
             model: 'anthropic.claude-3-haiku-20240307-v1:0',
             instructions: null,
@@ -389,7 +391,7 @@ describe('BedrockGateway tool use - Converse messages', function () {
             collect([new ToolResult('toolu_01', 'GetWeather', ['city' => 'Tokyo'], '{"temp": 25}', 'toolu_01')]),
         );
 
-        $gateway->generateText(
+        (new TextGenerationLoop($gateway))->generate(
             provider: makeToolTestProvider(),
             model: 'anthropic.claude-3-haiku-20240307-v1:0',
             instructions: null,
@@ -459,7 +461,7 @@ describe('BedrockGateway tool use - Converse tools', function () {
             }
         };
 
-        $gateway->generateText(
+        (new TextGenerationLoop($gateway))->generate(
             provider: makeToolTestProvider(),
             model: 'anthropic.claude-3-haiku-20240307-v1:0',
             instructions: null,
@@ -504,7 +506,7 @@ describe('BedrockGateway tool use - Converse tools', function () {
             }
         };
 
-        $gateway->generateText(
+        (new TextGenerationLoop($gateway))->generate(
             provider: makeToolTestProvider(),
             model: 'anthropic.claude-3-haiku-20240307-v1:0',
             instructions: null,
@@ -531,7 +533,7 @@ describe('BedrockGateway tool use - finish reason extraction', function () {
 
         $gateway = new BedrockGateway;
 
-        $response = $gateway->generateText(
+        $response = (new TextGenerationLoop($gateway))->generate(
             provider: makeToolTestProvider(),
             model: 'anthropic.claude-3-haiku-20240307-v1:0',
             instructions: null,
@@ -550,7 +552,7 @@ describe('BedrockGateway tool use - finish reason extraction', function () {
 
         $gateway = new BedrockGateway;
 
-        $response = $gateway->generateText(
+        $response = (new TextGenerationLoop($gateway))->generate(
             provider: makeToolTestProvider(),
             model: 'anthropic.claude-3-haiku-20240307-v1:0',
             instructions: null,
@@ -578,7 +580,7 @@ describe('BedrockGateway tool use - finish reason extraction', function () {
 
         $gateway = new BedrockGateway;
 
-        $response = $gateway->generateText(
+        $response = (new TextGenerationLoop($gateway))->generate(
             provider: makeToolTestProvider(),
             model: 'anthropic.claude-3-haiku-20240307-v1:0',
             instructions: null,
