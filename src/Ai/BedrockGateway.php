@@ -32,16 +32,6 @@ class BedrockGateway implements AudioGateway, EmbeddingGateway, ImageGateway, Re
     use DecodesStructuredOutput;
     use HandlesFailoverErrors;
 
-    /**
-     * Bedrock may return 529 (Anthropic overloaded) in addition to 503.
-     *
-     * @return list<int>
-     */
-    protected function overloadedStatusCodes(): array
-    {
-        return [503, 529];
-    }
-
     public function generateTextStep(
         TextProvider $provider,
         string $model,
@@ -113,5 +103,15 @@ class BedrockGateway implements AudioGateway, EmbeddingGateway, ImageGateway, Re
     {
         // Exception mapping logic if needed
         return $e;
+    }
+
+    /**
+     * Bedrock may return 529 (Anthropic overloaded) in addition to 503.
+     *
+     * @return list<int>
+     */
+    protected function overloadedStatusCodes(): array
+    {
+        return [503, 529];
     }
 }
