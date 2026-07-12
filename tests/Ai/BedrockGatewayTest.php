@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\Http;
 use Laravel\Ai\Enums\Lab;
+use Laravel\Ai\Gateway\TextGenerationLoop;
 use Laravel\Ai\Gateway\TextGenerationOptions;
 use Laravel\Ai\Messages\Message;
 use Laravel\Ai\Responses\TextResponse;
@@ -56,7 +57,7 @@ describe('BedrockGateway generateText', function () {
         ]);
 
         $gateway = new BedrockGateway;
-        $response = $gateway->generateText(
+        $response = (new TextGenerationLoop($gateway))->generate(
             provider: makeProvider(),
             model: 'anthropic.claude-3-haiku-20240307-v1:0',
             instructions: null,
@@ -74,7 +75,7 @@ describe('BedrockGateway generateText', function () {
         ]);
 
         $gateway = new BedrockGateway;
-        $response = $gateway->generateText(
+        $response = (new TextGenerationLoop($gateway))->generate(
             provider: makeProvider(),
             model: 'anthropic.claude-3-haiku-20240307-v1:0',
             instructions: null,
@@ -97,7 +98,7 @@ describe('BedrockGateway generateText', function () {
         ]);
 
         $gateway = new BedrockGateway;
-        $response = $gateway->generateText(
+        $response = (new TextGenerationLoop($gateway))->generate(
             provider: makeProvider(),
             model: 'anthropic.claude-3-haiku-20240307-v1:0',
             instructions: null,
@@ -116,7 +117,7 @@ describe('BedrockGateway generateText', function () {
         ]);
 
         $gateway = new BedrockGateway;
-        $response = $gateway->generateText(
+        $response = (new TextGenerationLoop($gateway))->generate(
             provider: makeProvider(['name' => 'bedrock']),
             model: 'anthropic.claude-3-haiku-20240307-v1:0',
             instructions: null,
@@ -133,7 +134,7 @@ describe('BedrockGateway generateText', function () {
         ]);
 
         $gateway = new BedrockGateway;
-        $gateway->generateText(
+        (new TextGenerationLoop($gateway))->generate(
             provider: makeProvider(['region' => 'us-east-1']),
             model: 'anthropic.claude-3-haiku-20240307-v1:0',
             instructions: null,
@@ -153,7 +154,7 @@ describe('BedrockGateway generateText', function () {
         ]);
 
         $gateway = new BedrockGateway;
-        $gateway->generateText(
+        (new TextGenerationLoop($gateway))->generate(
             provider: makeProvider(['key' => 'my-secret-key']),
             model: 'anthropic.claude-3-haiku-20240307-v1:0',
             instructions: null,
@@ -171,7 +172,7 @@ describe('BedrockGateway generateText', function () {
         ]);
 
         $gateway = new BedrockGateway;
-        $gateway->generateText(
+        (new TextGenerationLoop($gateway))->generate(
             provider: makeProvider(),
             model: 'anthropic.claude-3-haiku-20240307-v1:0',
             instructions: 'You are a helpful assistant.',
@@ -190,7 +191,7 @@ describe('BedrockGateway generateText', function () {
         ]);
 
         $gateway = new BedrockGateway;
-        $gateway->generateText(
+        (new TextGenerationLoop($gateway))->generate(
             provider: makeProvider(),
             model: 'anthropic.claude-3-haiku-20240307-v1:0',
             instructions: null,
@@ -208,7 +209,7 @@ describe('BedrockGateway generateText', function () {
         ]);
 
         $gateway = new BedrockGateway;
-        $gateway->generateText(
+        (new TextGenerationLoop($gateway))->generate(
             provider: makeProvider(),
             model: 'anthropic.claude-3-haiku-20240307-v1:0',
             instructions: null,
@@ -235,7 +236,7 @@ describe('BedrockGateway generateText', function () {
         ]);
 
         $gateway = new BedrockGateway;
-        $gateway->generateText(
+        (new TextGenerationLoop($gateway))->generate(
             provider: makeProvider(),
             model: 'anthropic.claude-3-haiku-20240307-v1:0',
             instructions: null,
@@ -256,7 +257,7 @@ describe('BedrockGateway generateText', function () {
         $options = new TextGenerationOptions(temperature: 0.7);
 
         $gateway = new BedrockGateway;
-        $gateway->generateText(
+        (new TextGenerationLoop($gateway))->generate(
             provider: makeProvider(),
             model: 'anthropic.claude-3-haiku-20240307-v1:0',
             instructions: null,
@@ -275,7 +276,7 @@ describe('BedrockGateway generateText', function () {
         ]);
 
         $gateway = new BedrockGateway;
-        $gateway->generateText(
+        (new TextGenerationLoop($gateway))->generate(
             provider: makeProvider(['max_tokens' => 1024]),
             model: 'anthropic.claude-3-haiku-20240307-v1:0',
             instructions: null,
@@ -293,7 +294,7 @@ describe('BedrockGateway generateText', function () {
         ]);
 
         $gateway = new BedrockGateway;
-        $gateway->generateText(
+        (new TextGenerationLoop($gateway))->generate(
             provider: makeProvider(),
             model: 'anthropic.claude-3-haiku-20240307-v1:0',
             instructions: null,
@@ -315,7 +316,7 @@ describe('BedrockGateway generateText', function () {
         ]);
 
         $gateway = new BedrockGateway;
-        $gateway->generateText(
+        (new TextGenerationLoop($gateway))->generate(
             provider: makeProvider(),
             model: 'anthropic.claude-3-haiku-20240307-v1:0',
             instructions: null,
@@ -335,7 +336,7 @@ describe('BedrockGateway generateText', function () {
         ]);
 
         $gateway = new BedrockGateway;
-        $gateway->generateText(
+        (new TextGenerationLoop($gateway))->generate(
             provider: makeProvider(['anthropic_version' => 'bedrock-2023-05-31']),
             model: 'anthropic.claude-3-haiku-20240307-v1:0',
             instructions: null,
@@ -358,7 +359,7 @@ describe('BedrockGateway generateText', function () {
         ]);
 
         $gateway = new BedrockGateway;
-        $gateway->generateText(
+        (new TextGenerationLoop($gateway))->generate(
             provider: makeProvider(),
             model: 'anthropic.claude-3-haiku-20240307-v1:0',
             instructions: null,
@@ -378,7 +379,7 @@ describe('BedrockGateway generateText', function () {
         ]);
 
         $gateway = new BedrockGateway;
-        $gateway->generateText(
+        (new TextGenerationLoop($gateway))->generate(
             provider: makeProvider(['region' => 'ap-northeast-1']),
             model: 'anthropic.claude-3-haiku-20240307-v1:0',
             instructions: null,

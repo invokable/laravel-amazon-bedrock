@@ -7,6 +7,7 @@ use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\JsonSchema\JsonSchemaTypeFactory;
 use Illuminate\Support\Facades\Http;
 use Laravel\Ai\Contracts\Tool;
+use Laravel\Ai\Gateway\TextGenerationLoop;
 use Laravel\Ai\Gateway\TextGenerationOptions;
 use Laravel\Ai\Messages\UserMessage;
 use Laravel\Ai\Responses\Data\FinishReason;
@@ -89,7 +90,7 @@ describe('BedrockGateway structured output - generateText', function () {
         ]);
 
         $gateway = new BedrockGateway;
-        $response = $gateway->generateText(
+        $response = (new TextGenerationLoop($gateway))->generate(
             provider: makeStructuredProvider(),
             model: 'anthropic.claude-3-haiku-20240307-v1:0',
             instructions: null,
@@ -108,7 +109,7 @@ describe('BedrockGateway structured output - generateText', function () {
         ]);
 
         $gateway = new BedrockGateway;
-        $response = $gateway->generateText(
+        $response = (new TextGenerationLoop($gateway))->generate(
             provider: makeStructuredProvider(),
             model: 'anthropic.claude-3-haiku-20240307-v1:0',
             instructions: null,
@@ -128,7 +129,7 @@ describe('BedrockGateway structured output - generateText', function () {
         ]);
 
         $gateway = new BedrockGateway;
-        $gateway->generateText(
+        (new TextGenerationLoop($gateway))->generate(
             provider: makeStructuredProvider(),
             model: 'anthropic.claude-3-haiku-20240307-v1:0',
             instructions: null,
@@ -154,7 +155,7 @@ describe('BedrockGateway structured output - generateText', function () {
         ]);
 
         $gateway = new BedrockGateway;
-        $gateway->generateText(
+        (new TextGenerationLoop($gateway))->generate(
             provider: makeStructuredProvider(),
             model: 'anthropic.claude-3-haiku-20240307-v1:0',
             instructions: null,
@@ -195,7 +196,7 @@ describe('BedrockGateway structured output - generateText', function () {
         };
 
         $gateway = new BedrockGateway;
-        $gateway->generateText(
+        (new TextGenerationLoop($gateway))->generate(
             provider: makeStructuredProvider(),
             model: 'anthropic.claude-3-haiku-20240307-v1:0',
             instructions: null,
@@ -219,7 +220,7 @@ describe('BedrockGateway structured output - generateText', function () {
         ]);
 
         $gateway = new BedrockGateway;
-        $response = $gateway->generateText(
+        $response = (new TextGenerationLoop($gateway))->generate(
             provider: makeStructuredProvider(),
             model: 'anthropic.claude-3-haiku-20240307-v1:0',
             instructions: null,
@@ -239,7 +240,7 @@ describe('BedrockGateway structured output - generateText', function () {
         ]);
 
         $gateway = new BedrockGateway;
-        $gateway->generateText(
+        (new TextGenerationLoop($gateway))->generate(
             provider: makeStructuredProvider(),
             model: 'anthropic.claude-3-haiku-20240307-v1:0',
             instructions: null,
@@ -272,7 +273,7 @@ describe('BedrockGateway structured output - generateText', function () {
         ]);
 
         $gateway = new BedrockGateway;
-        $response = $gateway->generateText(
+        $response = (new TextGenerationLoop($gateway))->generate(
             provider: makeStructuredProvider(),
             model: 'anthropic.claude-3-haiku-20240307-v1:0',
             instructions: null,
@@ -291,7 +292,7 @@ describe('BedrockGateway structured output - generateText', function () {
         ]);
 
         $gateway = new BedrockGateway;
-        $response = $gateway->generateText(
+        $response = (new TextGenerationLoop($gateway))->generate(
             provider: makeStructuredProvider(),
             model: 'anthropic.claude-3-haiku-20240307-v1:0',
             instructions: null,
@@ -310,7 +311,7 @@ describe('BedrockGateway structured output - generateText', function () {
         ]);
 
         $gateway = new BedrockGateway;
-        $response = $gateway->generateText(
+        $response = (new TextGenerationLoop($gateway))->generate(
             provider: makeStructuredProvider(),
             model: 'anthropic.claude-3-haiku-20240307-v1:0',
             instructions: null,
@@ -330,7 +331,7 @@ describe('BedrockGateway structured output - generateText', function () {
         ]);
 
         $gateway = new BedrockGateway;
-        $response = $gateway->generateText(
+        $response = (new TextGenerationLoop($gateway))->generate(
             provider: makeStructuredProvider(),
             model: 'anthropic.claude-3-haiku-20240307-v1:0',
             instructions: null,
@@ -339,7 +340,7 @@ describe('BedrockGateway structured output - generateText', function () {
         );
 
         expect($response->steps)->toHaveCount(1)
-            ->and($response->steps->first()->finishReason)->toBe(FinishReason::ToolCalls);
+            ->and($response->steps->first()->finishReason)->toBe(FinishReason::Stop);
     });
 
     test('structured output with tools and schema - real tools get executed, structured tool does not', function () {
@@ -373,6 +374,11 @@ describe('BedrockGateway structured output - generateText', function () {
 
         $tool = new class implements Tool
         {
+            public function name(): string
+            {
+                return 'SearchTool';
+            }
+
             public function description(): string|Stringable
             {
                 return 'Search for a person';
@@ -390,7 +396,7 @@ describe('BedrockGateway structured output - generateText', function () {
         };
 
         $gateway = new BedrockGateway;
-        $response = $gateway->generateText(
+        $response = (new TextGenerationLoop($gateway))->generate(
             provider: makeStructuredProvider(),
             model: 'anthropic.claude-3-haiku-20240307-v1:0',
             instructions: null,
@@ -416,7 +422,7 @@ describe('BedrockGateway structured output - generateText', function () {
         ]);
 
         $gateway = new BedrockGateway;
-        $response = $gateway->generateText(
+        $response = (new TextGenerationLoop($gateway))->generate(
             provider: makeStructuredProvider(),
             model: 'anthropic.claude-3-haiku-20240307-v1:0',
             instructions: null,
@@ -438,7 +444,7 @@ describe('BedrockGateway structured output - Converse requests', function () {
         ]);
 
         $gateway = new BedrockGateway;
-        $gateway->generateText(
+        (new TextGenerationLoop($gateway))->generate(
             provider: makeStructuredProvider(),
             model: 'anthropic.claude-3-haiku-20240307-v1:0',
             instructions: null,

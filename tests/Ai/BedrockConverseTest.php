@@ -13,6 +13,7 @@ use Laravel\Ai\Files\Audio;
 use Laravel\Ai\Files\Document;
 use Laravel\Ai\Files\Image;
 use Laravel\Ai\Files\ProviderImage;
+use Laravel\Ai\Gateway\TextGenerationLoop;
 use Laravel\Ai\Gateway\TextGenerationOptions;
 use Laravel\Ai\Messages\Message;
 use Laravel\Ai\Messages\UserMessage;
@@ -171,7 +172,7 @@ describe('Converse API generateText', function () {
         ]);
 
         $gateway = new BedrockGateway;
-        $response = $gateway->generateText(
+        $response = (new TextGenerationLoop($gateway))->generate(
             provider: makeConverseProvider(),
             model: 'amazon.nova-pro-v1:0',
             instructions: null,
@@ -189,7 +190,7 @@ describe('Converse API generateText', function () {
         ]);
 
         $gateway = new BedrockGateway;
-        $response = $gateway->generateText(
+        $response = (new TextGenerationLoop($gateway))->generate(
             provider: makeConverseProvider(),
             model: 'amazon.nova-pro-v1:0',
             instructions: null,
@@ -211,7 +212,7 @@ describe('Converse API generateText', function () {
         ]);
 
         $gateway = new BedrockGateway;
-        $response = $gateway->generateText(
+        $response = (new TextGenerationLoop($gateway))->generate(
             provider: makeConverseProvider(),
             model: 'amazon.nova-pro-v1:0',
             instructions: null,
@@ -228,7 +229,7 @@ describe('Converse API generateText', function () {
         ]);
 
         $gateway = new BedrockGateway;
-        $gateway->generateText(
+        (new TextGenerationLoop($gateway))->generate(
             provider: makeConverseProvider(),
             model: 'amazon.nova-pro-v1:0',
             instructions: null,
@@ -246,7 +247,7 @@ describe('Converse API generateText', function () {
         ]);
 
         $gateway = new BedrockGateway;
-        $gateway->generateText(
+        (new TextGenerationLoop($gateway))->generate(
             provider: makeConverseProvider(),
             model: 'amazon.nova-pro-v1:0',
             instructions: 'You are a helpful assistant.',
@@ -268,7 +269,7 @@ describe('Converse API generateText', function () {
         ]);
 
         $gateway = new BedrockGateway;
-        $gateway->generateText(
+        (new TextGenerationLoop($gateway))->generate(
             provider: makeConverseProvider(),
             model: 'amazon.nova-pro-v1:0',
             instructions: null,
@@ -291,7 +292,7 @@ describe('Converse API generateText', function () {
         ]);
 
         $gateway = new BedrockGateway;
-        $gateway->generateText(
+        (new TextGenerationLoop($gateway))->generate(
             provider: makeConverseProvider(),
             model: 'amazon.nova-pro-v1:0',
             instructions: null,
@@ -313,7 +314,7 @@ describe('Converse API generateText', function () {
         ]);
 
         $gateway = new BedrockGateway;
-        $gateway->generateText(
+        (new TextGenerationLoop($gateway))->generate(
             provider: makeConverseProvider(),
             model: 'amazon.nova-pro-v1:0',
             instructions: null,
@@ -335,7 +336,7 @@ describe('Converse API generateText', function () {
         ]);
 
         $gateway = new BedrockGateway;
-        $response = $gateway->generateText(
+        $response = (new TextGenerationLoop($gateway))->generate(
             provider: makeConverseProvider(),
             model: 'meta.llama3-8b-instruct-v1:0',
             instructions: null,
@@ -357,7 +358,7 @@ describe('Converse API generateText', function () {
         ]);
 
         $gateway = new BedrockGateway;
-        $response = $gateway->generateText(
+        $response = (new TextGenerationLoop($gateway))->generate(
             provider: makeConverseProvider(),
             model: 'mistral.mistral-large-2402-v1:0',
             instructions: null,
@@ -377,7 +378,7 @@ describe('Converse API generateText', function () {
         ]);
 
         $gateway = new BedrockGateway;
-        $response = $gateway->generateText(
+        $response = (new TextGenerationLoop($gateway))->generate(
             provider: makeConverseProvider(),
             model: 'anthropic.claude-3-haiku-20240307-v1:0',
             instructions: null,
@@ -399,7 +400,7 @@ describe('Converse API finish reasons', function () {
         ]);
 
         $gateway = new BedrockGateway;
-        $response = $gateway->generateText(
+        $response = (new TextGenerationLoop($gateway))->generate(
             provider: makeConverseProvider(),
             model: 'amazon.nova-pro-v1:0',
             instructions: null,
@@ -418,7 +419,7 @@ describe('Converse API finish reasons', function () {
         ]);
 
         $gateway = new BedrockGateway;
-        $response = $gateway->generateText(
+        $response = (new TextGenerationLoop($gateway))->generate(
             provider: makeConverseProvider(),
             model: 'amazon.nova-pro-v1:0',
             instructions: null,
@@ -434,11 +435,12 @@ describe('Converse API finish reasons', function () {
         ]);
 
         $gateway = new BedrockGateway;
-        $response = $gateway->generateText(
+        $response = (new TextGenerationLoop($gateway))->generate(
             provider: makeConverseProvider(),
             model: 'amazon.nova-pro-v1:0',
             instructions: null,
             messages: [new Message('user', 'What is the weather?')],
+            options: new TextGenerationOptions(maxSteps: 1),
         );
 
         expect($response->steps->first()->finishReason)->toBe(FinishReason::ToolCalls);
@@ -452,11 +454,12 @@ describe('Converse API tool calls', function () {
         ]);
 
         $gateway = new BedrockGateway;
-        $response = $gateway->generateText(
+        $response = (new TextGenerationLoop($gateway))->generate(
             provider: makeConverseProvider(),
             model: 'amazon.nova-pro-v1:0',
             instructions: null,
             messages: [new Message('user', 'What is the weather?')],
+            options: new TextGenerationOptions(maxSteps: 1),
         );
 
         $toolCalls = $response->steps->first()->toolCalls;
@@ -493,7 +496,7 @@ describe('Converse API tool calls', function () {
         };
 
         $gateway = new BedrockGateway;
-        $gateway->generateText(
+        (new TextGenerationLoop($gateway))->generate(
             provider: makeConverseProvider(),
             model: 'amazon.nova-pro-v1:0',
             instructions: null,
@@ -530,7 +533,7 @@ describe('Converse API structured output', function () {
         ]);
 
         $gateway = new BedrockGateway;
-        $response = $gateway->generateText(
+        $response = (new TextGenerationLoop($gateway))->generate(
             provider: makeConverseProvider(),
             model: 'amazon.nova-pro-v1:0',
             instructions: null,
@@ -552,7 +555,7 @@ describe('Converse API structured output', function () {
         ]);
 
         $gateway = new BedrockGateway;
-        $gateway->generateText(
+        (new TextGenerationLoop($gateway))->generate(
             provider: makeConverseProvider(),
             model: 'amazon.nova-pro-v1:0',
             instructions: null,
@@ -590,7 +593,7 @@ describe('Converse API request format', function () {
         ]);
 
         $gateway = new BedrockGateway;
-        $gateway->generateText(
+        (new TextGenerationLoop($gateway))->generate(
             provider: makeConverseProvider(),
             model: 'amazon.nova-pro-v1:0',
             instructions: null,
@@ -610,7 +613,7 @@ describe('Converse API request format', function () {
         ]);
 
         $gateway = new BedrockGateway;
-        $gateway->generateText(
+        (new TextGenerationLoop($gateway))->generate(
             provider: makeConverseProvider(['region' => 'eu-west-1']),
             model: 'amazon.nova-pro-v1:0',
             instructions: null,
@@ -628,7 +631,7 @@ describe('Converse API request format', function () {
         ]);
 
         $gateway = new BedrockGateway;
-        $gateway->generateText(
+        (new TextGenerationLoop($gateway))->generate(
             provider: makeConverseProvider(['max_tokens' => 4096]),
             model: 'amazon.nova-pro-v1:0',
             instructions: null,
@@ -648,7 +651,7 @@ describe('Converse API request format', function () {
         ]);
 
         $gateway = new BedrockGateway;
-        $gateway->generateText(
+        (new TextGenerationLoop($gateway))->generate(
             provider: makeConverseProvider(),
             model: 'amazon.nova-pro-v1:0',
             instructions: null,
@@ -673,7 +676,7 @@ describe('Converse API request format', function () {
         ]);
 
         $gateway = new BedrockGateway;
-        $gateway->generateText(
+        (new TextGenerationLoop($gateway))->generate(
             provider: makeConverseProvider(),
             model: 'amazon.nova-pro-v1:0',
             instructions: null,
@@ -698,7 +701,7 @@ describe('Converse API request format', function () {
         ]);
 
         $gateway = new BedrockGateway;
-        $gateway->generateText(
+        (new TextGenerationLoop($gateway))->generate(
             provider: makeConverseProvider(),
             model: 'amazon.nova-pro-v1:0',
             instructions: null,
@@ -724,7 +727,7 @@ describe('Converse API request format', function () {
         $video = UploadedFile::fake()->create('demo.mp4', 1, 'video/mp4');
 
         $gateway = new BedrockGateway;
-        $gateway->generateText(
+        (new TextGenerationLoop($gateway))->generate(
             provider: makeConverseProvider(),
             model: 'amazon.nova-pro-v1:0',
             instructions: null,
@@ -743,7 +746,7 @@ describe('Converse API request format', function () {
     test('rejects unsupported provider file attachments for Converse', function () {
         $gateway = new BedrockGateway;
 
-        $gateway->generateText(
+        (new TextGenerationLoop($gateway))->generate(
             provider: makeConverseProvider(),
             model: 'amazon.nova-pro-v1:0',
             instructions: null,

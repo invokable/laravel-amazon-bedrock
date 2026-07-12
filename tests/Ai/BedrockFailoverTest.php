@@ -6,6 +6,7 @@ use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
 use Laravel\Ai\Exceptions\ProviderOverloadedException;
 use Laravel\Ai\Exceptions\RateLimitedException;
+use Laravel\Ai\Gateway\TextGenerationLoop;
 use Revolution\Amazon\Bedrock\Ai\BedrockGateway;
 
 // makeProvider() is defined in BedrockGatewayTest.php and available globally via Pest.
@@ -21,7 +22,7 @@ describe('HandlesFailoverErrors', function () {
 
         $gateway = new BedrockGateway;
 
-        $gateway->generateText(
+        (new TextGenerationLoop($gateway))->generate(
             provider: makeProvider(),
             model: 'anthropic.claude-3-haiku-20240307-v1:0',
             instructions: null,
@@ -39,7 +40,7 @@ describe('HandlesFailoverErrors', function () {
 
         $gateway = new BedrockGateway;
 
-        $gateway->generateText(
+        (new TextGenerationLoop($gateway))->generate(
             provider: makeProvider(),
             model: 'anthropic.claude-3-haiku-20240307-v1:0',
             instructions: null,
@@ -57,7 +58,7 @@ describe('HandlesFailoverErrors', function () {
 
         $gateway = new BedrockGateway;
 
-        $gateway->generateText(
+        (new TextGenerationLoop($gateway))->generate(
             provider: makeProvider(),
             model: 'anthropic.claude-3-haiku-20240307-v1:0',
             instructions: null,
@@ -146,7 +147,7 @@ describe('HandlesFailoverErrors', function () {
 
         $gateway = new BedrockGateway;
 
-        $gateway->generateText(
+        (new TextGenerationLoop($gateway))->generate(
             provider: makeProvider(),
             model: 'amazon.nova-pro-v1:0',
             instructions: null,
@@ -164,7 +165,7 @@ describe('HandlesFailoverErrors', function () {
 
         $gateway = new BedrockGateway;
 
-        $gateway->generateText(
+        (new TextGenerationLoop($gateway))->generate(
             provider: makeProvider(),
             model: 'amazon.nova-pro-v1:0',
             instructions: null,
@@ -182,7 +183,7 @@ describe('HandlesFailoverErrors', function () {
 
         $gateway = new BedrockGateway;
 
-        $generator = $gateway->streamText(
+        $generator = (new TextGenerationLoop($gateway))->stream(
             invocationId: 'test-id',
             provider: makeProvider(),
             model: 'anthropic.claude-3-haiku-20240307-v1:0',
@@ -204,7 +205,7 @@ describe('HandlesFailoverErrors', function () {
 
         $gateway = new BedrockGateway;
 
-        $generator = $gateway->streamText(
+        $generator = (new TextGenerationLoop($gateway))->stream(
             invocationId: 'test-id',
             provider: makeProvider(),
             model: 'amazon.nova-pro-v1:0',
@@ -234,7 +235,7 @@ describe('HandlesFailoverErrors', function () {
 
         $gateway = new BedrockGateway;
 
-        $gateway->generateText(
+        (new TextGenerationLoop($gateway))->generate(
             provider: makeProvider(),
             model: 'anthropic.claude-3-haiku-20240307-v1:0',
             instructions: null,
@@ -253,7 +254,7 @@ describe('HandlesFailoverErrors', function () {
         $gateway = new BedrockGateway;
 
         try {
-            $gateway->generateText(
+            (new TextGenerationLoop($gateway))->generate(
                 provider: makeProvider(),
                 model: 'anthropic.claude-3-haiku-20240307-v1:0',
                 instructions: null,
@@ -279,7 +280,7 @@ describe('HandlesFailoverErrors', function () {
         $gateway = new BedrockGateway;
 
         try {
-            $gateway->generateText(
+            (new TextGenerationLoop($gateway))->generate(
                 provider: makeProvider(),
                 model: 'anthropic.claude-3-haiku-20240307-v1:0',
                 instructions: null,
