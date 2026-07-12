@@ -10,12 +10,13 @@ use Aws\Credentials\CredentialsInterface;
 use Aws\Signature\SignatureV4;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
+use Laravel\Ai\Contracts\Providers\TextProvider;
 use Laravel\Ai\Providers\Provider;
 use Psr\Http\Message\RequestInterface;
 
 trait CreatesBedrockClient
 {
-    protected function client(Provider $provider, string $model, ?int $timeout = null): PendingRequest
+    protected function client(Provider|TextProvider $provider, string $model, ?int $timeout = null): PendingRequest
     {
         $config = $provider->additionalConfiguration();
         $region = $config['region'] ?? 'us-east-1';
@@ -36,7 +37,7 @@ trait CreatesBedrockClient
      * 2. Bearer token (Bedrock API key only)
      * 3. SigV4 with default AWS credential chain (IAM roles, env vars, instance profiles)
      */
-    protected function authenticate(PendingRequest $client, Provider $provider, string $region, string $service = 'bedrock'): PendingRequest
+    protected function authenticate(PendingRequest $client, Provider|TextProvider $provider, string $region, string $service = 'bedrock'): PendingRequest
     {
         $config = $provider->additionalConfiguration();
         $secret = $config['secret'] ?? null;

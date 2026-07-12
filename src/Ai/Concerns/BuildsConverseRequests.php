@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Revolution\Amazon\Bedrock\Ai\Concerns;
 
 use Illuminate\JsonSchema\JsonSchemaTypeFactory;
+use Laravel\Ai\Contracts\Providers\TextProvider;
 use Laravel\Ai\Contracts\Tool;
 use Laravel\Ai\Gateway\TextGenerationOptions;
 use Laravel\Ai\Messages\AssistantMessage;
@@ -22,7 +23,7 @@ trait BuildsConverseRequests
      * Build a Converse API request body.
      */
     protected function buildConverseRequestBody(
-        Provider $provider,
+        Provider|TextProvider $provider,
         string $model,
         ?string $instructions,
         array $messages,

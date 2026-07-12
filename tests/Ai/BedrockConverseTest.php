@@ -21,7 +21,6 @@ use Laravel\Ai\Providers\Provider;
 use Laravel\Ai\Responses\Data\FinishReason;
 use Laravel\Ai\Responses\StructuredTextResponse;
 use Laravel\Ai\Responses\TextResponse;
-use Laravel\Ai\Streaming\Events\StreamEnd;
 use Laravel\Ai\Streaming\Events\StreamStart;
 use Laravel\Ai\Streaming\Events\TextDelta;
 use Laravel\Ai\Streaming\Events\TextEnd;
@@ -93,7 +92,6 @@ function makeMockConverseStreamGateway(array $events): object
 
         public function __construct(array $events)
         {
-            parent::__construct();
             $this->events = $events;
         }
 
@@ -104,21 +102,18 @@ function makeMockConverseStreamGateway(array $events): object
             }
         }
 
-        public function testProcessConverseStream(
+        public function testProcessConverseStreamStep(
             string $invocationId,
             Provider $provider,
             string $model,
-            array $tools,
-            ?TextGenerationOptions $options,
             $streamBody,
         ): Generator {
-            return $this->processConverseStream(
+            return $this->processConverseStreamStep(
                 invocationId: $invocationId,
                 provider: $provider,
                 model: $model,
-                tools: $tools,
-                options: $options,
-                streamBody: $streamBody,
+                stream: $streamBody,
+                structured: false,
             );
         }
     };
@@ -769,12 +764,10 @@ describe('Converse stream event parsing', function () {
         $mockGateway = makeMockConverseStreamGateway($events);
         $provider = makeConverseProvider();
 
-        $streamEvents = iterator_to_array($mockGateway->testProcessConverseStream(
+        $streamEvents = iterator_to_array($mockGateway->testProcessConverseStreamStep(
             invocationId: 'test-inv-123',
             provider: $provider,
             model: 'amazon.nova-pro-v1:0',
-            tools: [],
-            options: null,
             streamBody: null,
         ));
 
@@ -795,16 +788,14 @@ describe('Converse stream event parsing', function () {
         $mockGateway = makeMockConverseStreamGateway($events);
         $provider = makeConverseProvider();
 
-        $streamEvents = iterator_to_array($mockGateway->testProcessConverseStream(
+        $streamEvents = iterator_to_array($mockGateway->testProcessConverseStreamStep(
             invocationId: 'test-inv-123',
             provider: $provider,
             model: 'amazon.nova-pro-v1:0',
-            tools: [],
-            options: null,
             streamBody: null,
         ));
 
-        // StreamStart, TextStart, TextDelta('Hello '), TextDelta('World'), TextEnd, StreamEnd
+        // StreamStart, TextStart, TextDelta('Hello '), TextDelta('World'), TextEnd
         $textDeltas = array_values(array_filter($streamEvents, fn ($e) => $e instanceof TextDelta));
 
         expect($textDeltas)->toHaveCount(2)
@@ -825,12 +816,10 @@ describe('Converse stream event parsing', function () {
         $mockGateway = makeMockConverseStreamGateway($events);
         $provider = makeConverseProvider();
 
-        $streamEvents = iterator_to_array($mockGateway->testProcessConverseStream(
+        $streamEvents = iterator_to_array($mockGateway->testProcessConverseStreamStep(
             invocationId: 'test-inv-123',
             provider: $provider,
             model: 'amazon.nova-pro-v1:0',
-            tools: [],
-            options: null,
             streamBody: null,
         ));
 
@@ -850,7 +839,7 @@ describe('Converse stream event parsing', function () {
             ->and($hasTextEnd)->toBeTrue();
     });
 
-    test('emits StreamEnd with usage', function () {
+    test('returns step response with usage', function () {
         $events = [
             ['messageStart', ['role' => 'assistant']],
             ['contentBlockStart', ['contentBlockIndex' => 0, 'start' => []]],
@@ -863,20 +852,18 @@ describe('Converse stream event parsing', function () {
         $mockGateway = makeMockConverseStreamGateway($events);
         $provider = makeConverseProvider();
 
-        $streamEvents = iterator_to_array($mockGateway->testProcessConverseStream(
+        $stream = $mockGateway->testProcessConverseStreamStep(
             invocationId: 'test-inv-123',
             provider: $provider,
             model: 'amazon.nova-pro-v1:0',
-            tools: [],
-            options: null,
             streamBody: null,
-        ));
+        );
 
-        $streamEnd = end($streamEvents);
+        iterator_to_array($stream);
+        $response = $stream->getReturn();
 
-        expect($streamEnd)->toBeInstanceOf(StreamEnd::class)
-            ->and($streamEnd->usage->promptTokens)->toBe(12)
-            ->and($streamEnd->usage->completionTokens)->toBe(8);
+        expect($response->usage->promptTokens)->toBe(12)
+            ->and($response->usage->completionTokens)->toBe(8);
     });
 
     test('propagates invocationId on all events', function () {
@@ -892,12 +879,10 @@ describe('Converse stream event parsing', function () {
         $mockGateway = makeMockConverseStreamGateway($events);
         $provider = makeConverseProvider();
 
-        $streamEvents = iterator_to_array($mockGateway->testProcessConverseStream(
+        $streamEvents = iterator_to_array($mockGateway->testProcessConverseStreamStep(
             invocationId: 'my-unique-id',
             provider: $provider,
             model: 'amazon.nova-pro-v1:0',
-            tools: [],
-            options: null,
             streamBody: null,
         ));
 
