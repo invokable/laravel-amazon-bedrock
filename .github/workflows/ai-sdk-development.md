@@ -14,7 +14,7 @@ permissions:
 
 engine:
   id: copilot
-  model: claude-haiku-4.5
+  model: claude-sonnet-5
 
 checkout:
   ref: main
