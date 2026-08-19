@@ -64,17 +64,17 @@ class BedrockProvider extends Provider implements AudioProvider, EmbeddingProvid
 
     public function defaultTextModel(): string
     {
-        return $this->config['models']['text']['default'] ?? 'global.anthropic.claude-sonnet-5';
+        return $this->config['models']['text']['default'] ?? 'global.openai.gpt-5.6-terra';
     }
 
     public function cheapestTextModel(): string
     {
-        return $this->config['models']['text']['cheapest'] ?? 'global.anthropic.claude-haiku-4-5-20251001-v1:0';
+        return $this->config['models']['text']['cheapest'] ?? 'global.openai.gpt-5.6-luna';
     }
 
     public function smartestTextModel(): string
     {
-        return $this->config['models']['text']['smartest'] ?? 'global.anthropic.claude-opus-5';
+        return $this->config['models']['text']['smartest'] ?? 'global.openai.gpt-5.6-sol';
     }
 
     public function defaultImageModel(): string
