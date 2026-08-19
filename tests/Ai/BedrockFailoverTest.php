@@ -222,7 +222,7 @@ describe('HandlesFailoverErrors', function () {
         $reflection = new ReflectionMethod($gateway, 'overloadedStatusCodes');
         $codes = $reflection->invoke($gateway);
 
-        expect($codes)->toBe([503, 529]);
+        expect($codes)->toBe([502, 503, 504, 520, 522, 524, 529]);
     });
 
     test('non-failover HTTP errors are re-thrown as RequestException', function () {
