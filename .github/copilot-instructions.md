@@ -27,7 +27,7 @@ Prismにバグがあったので作ったパッケージだったけどその後
 - [x] InvokeModelよりConverse APIの方が新しいのでAnthropicもConverse APIに変更して統一。
 - [x] Transcriptionsは `workbench/routes/console.php` で試したら動かない。AudioBlockに対応してるモデルがもうない。Amazon Transcribeを使うのがもう主流。一旦非対応に戻す。AudioBlockを使う方法は削除、いつか復旧するときはこのPRから取り出す https://github.com/invokable/laravel-amazon-bedrock/pull/32
 - [x] 公式でTranscriptionsに対応してるのはOpenAI、ElevenLabs、Mistral。BedrockでOpenAIのモデル(gpt-oss以外も)が使えるようになるらしいニュースがあったので様子を見る。
-- BedrockでGPT-5.4、GPT-5.5が使えるようになった。テキスト生成のみでTranscriptionsへの影響はなさそう。Converse APIでは使えないけどAI SDKの標準OpenAIドライバーのbase url変えで対応できるのでこのパッケージでの対応は不要。
+- BedrockでGPT-5.4、5.5、5.6が使えるようになった。テキスト生成のみでTranscriptionsへの影響はなさそう。
 - 機能追加のタスクがなくなったら既存コードのリファクタリングやテスト追加やLaravel AI SDKのアップデート対応を行う。Laravel AI SDKはまだv0.x、composerはv1.0前では+0.1でもメジャーバージョンアップ扱いなのでまだまだ破壊的変更が入る可能性がある。
 
 GitHub Agentic Workflowsで少しずつ実行。
