@@ -4,8 +4,13 @@ declare(strict_types=1);
 
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
+use Laravel\Ai\AnonymousAgent;
 use Laravel\Ai\Contracts\Tool;
+use Laravel\Ai\Events\InvokingTool;
+use Laravel\Ai\Events\ToolInvoked;
+use Laravel\Ai\Gateway\RunContext;
 use Laravel\Ai\Gateway\TextGenerationLoop;
 use Laravel\Ai\Gateway\TextGenerationOptions;
 use Laravel\Ai\Messages\AssistantMessage;
@@ -268,7 +273,9 @@ describe('BedrockGateway tool use - generateText', function () {
             ->and($response->usage->completionTokens)->toBe(80);
     });
 
-    test('invokes tool callbacks', function () {
+    test('reports tool invocations through the run context', function () {
+        Event::fake([InvokingTool::class, ToolInvoked::class]);
+
         Http::fake([
             'bedrock-runtime.us-east-1.amazonaws.com/*' => Http::sequence([
                 Http::response(fakeToolUseResponse()),
@@ -276,34 +283,36 @@ describe('BedrockGateway tool use - generateText', function () {
             ]),
         ]);
 
-        $invokingCalled = false;
-        $invokedCalled = false;
+        $provider = makeToolTestProvider();
+        $tool = createGetWeatherTool();
+        $agent = new AnonymousAgent(instructions: '', messages: [], tools: [$tool]);
 
-        $gateway = new BedrockGateway;
-        $loop = new TextGenerationLoop($gateway);
-        $loop->onToolInvocation(
-            invoking: function ($tool, $arguments) use (&$invokingCalled) {
-                $invokingCalled = true;
-                expect($arguments)->toBe(['city' => 'Tokyo']);
-            },
-            invoked: function ($tool, $arguments, $result) use (&$invokedCalled) {
-                $invokedCalled = true;
-                expect($result)->toContain('sunny');
-            },
+        $context = new RunContext(
+            invocationId: 'test-invocation',
+            agent: $agent,
+            provider: $provider,
+            model: 'anthropic.claude-3-haiku-20240307-v1:0',
+            events: app(Dispatcher::class),
         );
 
-        $tool = createGetWeatherTool();
+        $gateway = new BedrockGateway;
 
-        $loop->generate(
-            provider: makeToolTestProvider(),
+        (new TextGenerationLoop($gateway))->generate(
+            provider: $provider,
             model: 'anthropic.claude-3-haiku-20240307-v1:0',
             instructions: null,
             messages: [new Message('user', 'Weather in Tokyo?')],
             tools: [$tool],
+            context: $context,
         );
 
-        expect($invokingCalled)->toBeTrue()
-            ->and($invokedCalled)->toBeTrue();
+        Event::assertDispatched(InvokingTool::class, function (InvokingTool $event) {
+            return $event->arguments === ['city' => 'Tokyo'];
+        });
+
+        Event::assertDispatched(ToolInvoked::class, function (ToolInvoked $event) {
+            return str_contains((string) $event->result, 'sunny');
+        });
     });
 
     test('respects maxSteps limit', function () {

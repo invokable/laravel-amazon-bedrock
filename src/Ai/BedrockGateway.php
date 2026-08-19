@@ -106,12 +106,14 @@ class BedrockGateway implements AudioGateway, EmbeddingGateway, ImageGateway, Re
     }
 
     /**
-     * Bedrock may return 529 (Anthropic overloaded) in addition to 503.
+     * Bedrock may return 529 (Anthropic overloaded) in addition to the
+     * standard set of transient gateway/upstream status codes used by
+     * Laravel\Ai\Gateway\Concerns\HandlesFailoverErrors.
      *
      * @return list<int>
      */
     protected function overloadedStatusCodes(): array
     {
-        return [503, 529];
+        return [502, 503, 504, 520, 522, 524, 529];
     }
 }
