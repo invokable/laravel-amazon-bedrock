@@ -236,7 +236,29 @@ describe('Converse API generateText', function () {
         });
     });
 
-    test('includes system prompt in Converse format', function () {
+    test('includes system prompt with cachePoint for Claude models', function () {
+        Http::fake([
+            'bedrock-runtime.us-east-1.amazonaws.com/*' => Http::response(fakeConverseResponse()),
+        ]);
+
+        $gateway = new BedrockGateway;
+        (new TextGenerationLoop($gateway))->generate(
+            provider: makeConverseProvider(),
+            model: 'anthropic.claude-3-haiku-20240307-v1:0',
+            instructions: 'You are a helpful assistant.',
+            messages: [new Message('user', 'Hello')],
+        );
+
+        Http::assertSent(function ($request) {
+            $body = json_decode($request->body(), true);
+
+            return isset($body['system'])
+                && $body['system'][0]['text'] === 'You are a helpful assistant.'
+                && $body['system'][1]['cachePoint']['type'] === 'default';
+        });
+    });
+
+    test('does not include cachePoint for non-Claude models', function () {
         Http::fake([
             'bedrock-runtime.us-east-1.amazonaws.com/*' => Http::response(fakeConverseResponse()),
         ]);
@@ -253,8 +275,9 @@ describe('Converse API generateText', function () {
             $body = json_decode($request->body(), true);
 
             return isset($body['system'])
-                && $body['system'][0]['text'] === 'You are a helpful assistant.'
-                && $body['system'][1]['cachePoint']['type'] === 'default';
+                && $body['system'] === [
+                    ['text' => 'You are a helpful assistant.'],
+                ];
         });
     });
 
