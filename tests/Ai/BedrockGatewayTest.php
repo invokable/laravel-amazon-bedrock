@@ -396,19 +396,19 @@ describe('BedrockProvider model defaults', function () {
     test('returns default text model', function () {
         $provider = makeProvider();
 
-        expect($provider->defaultTextModel())->toContain('terra');
+        expect($provider->defaultTextModel())->toContain('global.anthropic.claude-sonnet');
     });
 
     test('returns cheapest text model', function () {
         $provider = makeProvider();
 
-        expect($provider->cheapestTextModel())->toContain('luna');
+        expect($provider->cheapestTextModel())->toContain('global.anthropic.claude-haiku');
     });
 
     test('returns smartest text model', function () {
         $provider = makeProvider();
 
-        expect($provider->smartestTextModel())->toContain('sol');
+        expect($provider->smartestTextModel())->toContain('global.anthropic.claude-opus');
     });
 
     test('uses custom models from config', function () {
