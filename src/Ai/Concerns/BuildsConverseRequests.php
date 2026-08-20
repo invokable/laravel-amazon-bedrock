@@ -39,7 +39,7 @@ trait BuildsConverseRequests
         ];
 
         if (filled($instructions)) {
-            $body['system'] = $this->buildConverseSystemPrompt($instructions);
+            $body['system'] = $this->buildConverseSystemPrompt($instructions, $model);
         }
 
         $inferenceConfig = [];
@@ -93,12 +93,15 @@ trait BuildsConverseRequests
      *
      * @return array<int, array<string, mixed>>
      */
-    protected function buildConverseSystemPrompt(string $instructions): array
+    protected function buildConverseSystemPrompt(string $instructions, string $model): array
     {
-        return [
-            ['text' => $instructions],
-            ['cachePoint' => ['type' => 'default']],
-        ];
+        $systemPrompt = [['text' => $instructions]];
+
+        if (str_contains($model, 'anthropic.claude')) {
+            $systemPrompt[] = ['cachePoint' => ['type' => 'default']];
+        }
+
+        return $systemPrompt;
     }
 
     /**
