@@ -25,7 +25,11 @@ use function Laravel\Ai\agent;
 Artisan::command('bedrock:text', function () {
     $response = agent(
         instructions: 'You are an expert at software development.',
-    )->prompt('Tell me about Laravel in one sentence.', provider: Bedrock::KEY);
+    )->prompt(
+        prompt: 'Tell me about Laravel in one sentence.',
+        provider: Bedrock::KEY,
+        model: 'global.openai.gpt-5.6-luna',
+    );
 
     $this->info($response->text);
 })->purpose('Text generation with Anthropic Claude (Converse API)');
