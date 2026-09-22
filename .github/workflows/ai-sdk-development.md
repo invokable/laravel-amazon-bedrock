@@ -12,7 +12,7 @@ permissions:
   issues: read
   pull-requests: read
 
-model: gpt-5.6-luna
+model: gpt-6-luna
 engine:
   id: copilot
 checkout:
@@ -23,7 +23,7 @@ steps:
         uses: shivammathur/setup-php@2.37.2
         with:
             php-version: 8.5
-            extensions: mbstring, dom
+            extensions: mbstring, xml, phar, dom, tokenizer
             coverage: xdebug
     -   name: Install Composer dependencies
         run: composer install -q --no-interaction --prefer-dist --optimize-autoloader

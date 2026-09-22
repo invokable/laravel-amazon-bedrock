@@ -25,15 +25,15 @@ jobs:
           persist-credentials: false
 
       - name: Install gh-aw extension
-        uses: github/gh-aw-actions/setup-cli@9271a1804551c0dc4fb0085a97979950aa2f8489 # v0.88.2
+        uses: github/gh-aw-actions/setup-cli@f3b81cdb3070066a47faa9bdf440f4f1dc78b1f0 # v0.89.17
         with:
-          version: v0.88.2
+          version: v0.89.17
 
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: 8.5
-          extensions: mbstring
+          extensions: mbstring, xml, phar, dom, tokenizer
           coverage: xdebug
 
       - name: Install Composer dependencies
