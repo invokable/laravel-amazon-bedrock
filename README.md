@@ -6,6 +6,9 @@
 
 Docs: [English](https://kawax.biz/en/packages/laravel-amazon-bedrock) [Japanese](https://kawax.biz/jp/packages/laravel-amazon-bedrock)
 
+> [!CAUTION]
+> With the release of the Laravel AI SDK v1.0, the official SDK is now sufficient for Bedrock, so this package is being discontinued.
+
 ## Overview
 
 An Amazon Bedrock driver for the [Laravel AI SDK](https://laravel.com/docs/ai-sdk), enabling text generation, streaming, tool use (function calling), structured output, file attachments, embeddings, image generation, audio (TTS), and reranking via models on AWS Bedrock.
@@ -23,10 +26,10 @@ An Amazon Bedrock driver for the [Laravel AI SDK](https://laravel.com/docs/ai-sd
 | Reranking          | ⚠️      | Cohere Rerank 3.5, Amazon Rerank 1.0                                                                         |
 | Files              | ✅️      | Local file attachments supported via text generation; server-side upload and `fromId()` not supported        |
 
-> [!INFO]
+> [!NOTE]
 > ⚠️ in this table means the feature is not available with only a Bedrock API key. It does not mean the feature itself is unsupported.
 
-> [!INFO]
+> [!NOTE]
 > Laravel AI SDK v0.6.3 added official Bedrock support for Text, Image, and Embeddings using a Bedrock API key. This package continues to be published because it also supports Audio (TTS via Amazon Polly) and Reranking — features not available through the official integration.
 
 - **Authentication**: Bedrock API key, AWS IAM credentials (SigV4), or default AWS credential chain (IAM roles, instance profiles, etc.).
