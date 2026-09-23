@@ -29,6 +29,7 @@ Prismにバグがあったので作ったパッケージだったけどその後
 - [x] 公式でTranscriptionsに対応してるのはOpenAI、ElevenLabs、Mistral。BedrockでOpenAIのモデル(gpt-oss以外も)が使えるようになるらしいニュースがあったので様子を見る。
 - BedrockでGPT-5.4、5.5、5.6が使えるようになった。テキスト生成のみでTranscriptionsへの影響はなさそう。
 - 機能追加のタスクがなくなったら既存コードのリファクタリングやテスト追加やLaravel AI SDKのアップデート対応を行う。Laravel AI SDKはまだv0.x、composerはv1.0前では+0.1でもメジャーバージョンアップ扱いなのでまだまだ破壊的変更が入る可能性がある。
+- Laravel AI SDK v1.0がリリース。Bedrockはこの間にText, Embedding, Image, Rerankingまで対応していてもう公式SDKを使えば十分そうなのでこのパッケージは終了。
 
 GitHub Agentic Workflowsで少しずつ実行。
 実装フェーズは完了したので毎日実行から週一実行に変更。Laravelチームは火曜日に定期リリースしているので水曜日に実行すれば十分。AI SDKは開発中なのでまだ定期リリースとは限らないけど対応が必要な時はAWを手動で実行する。  
